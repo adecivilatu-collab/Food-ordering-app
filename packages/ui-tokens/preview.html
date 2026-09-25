@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Food Marketplace — Design System Preview</title>
+<style>
+:root{--primary:#E63B2E;--primary-dark:#B72A20;--success:#1A9E50;--warning:#E79B13;--danger:#D92D20;--info:#2E90FA;--text:#1A1A1A;--muted:#667085;--bg:#fff;--surface:#F9FAFB}
+*{box-sizing:border-box}body{font-family:Inter,system-ui,sans-serif;color:var(--text);margin:0;background:var(--bg)}
+header{background:var(--primary);color:#fff;padding:20px}header small{opacity:.85}
+.wrap{max-width:960px;margin:auto;padding:20px}
+h2{margin-top:36px;border-bottom:2px solid var(--surface);padding-bottom:6px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.swatch{border-radius:12px;overflow:hidden;border:1px solid #eee}.swatch div{height:56px}.swatch p{margin:0;padding:8px;font-size:12px}
+.btn{display:inline-block;border:0;border-radius:12px;padding:12px 20px;font-size:16px;min-height:44px;cursor:pointer;margin:4px}
+.btn-primary{background:var(--primary);color:#fff}.btn-dark{background:var(--primary-dark);color:#fff}.btn-outline{border:2px solid var(--primary);color:var(--primary);background:#fff}
+.badge{display:inline-block;border-radius:999px;padding:4px 12px;font-size:14px;margin:4px;color:#fff}.open{background:var(--success)}.closed{background:var(--muted)}.promo{background:var(--warning);color:#000}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{border:1px solid #eee;border-radius:16px;overflow:hidden;background:#fff}.card img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--surface)}.card .body{padding:12px}.price{font-size:16px;font-weight:700}.muted{color:var(--muted);font-size:14px}
+.stars{color:var(--warning)}.timeline{border-left:3px solid var(--surface);margin:12px 0 12px 6px;padding-left:16px}.timeline div{margin:8px 0}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--success);margin-right:8px}
+input,select{border:1px solid #ddd;border-radius:12px;padding:12px;font-size:16px;min-height:44px;margin:4px}
+.cart{background:var(--surface);border-radius:16px;padding:16px}.row{display:flex;justify-content:space-between;padding:4px 0}.total{font-weight:700;font-size:20px;border-top:1px solid #ddd;margin-top:8px;padding-top:8px}
+</style>
+</head>
+<body>
+<header><h1 style="margin:0">🍔 Food Marketplace — Design System</h1><small>Tokens: appetite red, 4pt grid, radius 8/12/16, ₦ prices, 44px touch</small></header>
+<div class="wrap">
+<h2>1. Colors</h2>
+<div class="swatches">
+<div class="swatch"><div style="background:#E63B2E"></div><p>Primary #E63B2E</p></div>
+<div class="swatch"><div style="background:#B72A20"></div><p>PrimaryDark #B72A20</p></div>
+<div class="swatch"><div style="background:#1A9E50"></div><p>Success #1A9E50</p></div>
+<div class="swatch"><div style="background:#E79B13"></div><p>Warning #E79B13</p></div>
+<div class="swatch"><div style="background:#D92D20"></div><p>Danger #D92D20</p></div>
+<div class="swatch"><div style="background:#2E90FA"></div><p>Info #2E90FA</p></div>
+<div class="swatch"><div style="background:#1A1A1A"></div><p>Text #1A1A1A</p></div>
+<div class="swatch"><div style="background:#667085"></div><p>Muted #667085</p></div>
+</div>
+<h2>2. Typography (12/14/16/20/24/32)</h2>
+<p style="font-size:32px;font-weight:700;margin:4px 0">Heading 32 bold — Jollof Rice</p>
+<p style="font-size:24px;font-weight:500;margin:4px 0">24 medium — Nearby Restaurants</p>
+<p style="font-size:20px;margin:4px 0">20 regular — Restaurant name</p>
+<p style="font-size:16px;margin:4px 0">16 regular — <b>₦3,500</b> prices min 16px</p>
+<p style="font-size:14px;color:#667085;margin:4px 0">14 muted — descriptions, fees, ETA</p>
+<p style="font-size:12px;color:#667085;margin:4px 0">12 small — labels, timestamps</p>
+<h2>3. Buttons & Badges</h2>
+<button class="btn btn-primary">Order Now</button>
+<button class="btn btn-dark">Add to Cart</button>
+<button class="btn btn-outline">View Menu</button><br>
+<span class="badge open">Open</span><span class="badge closed">Closed</span><span class="badge promo">Free Delivery</span>
+<span class="stars">★★★★☆ 4.2 (180)</span>
+<h2>4. Restaurant & Food Cards</h2>
+<div class="cards">
+<div class="card"><img alt="restaurant"><div class="body"><b>Mama Put Kitchen</b><div class="muted">Nigerian • 25 min • ₦800 fee</div><span class="badge open">Open</span> <span class="stars">★★★★☆</span></div></div>
+<div class="card"><img alt="food"><div class="body"><b>Chicken Jollof + Plantain</b><div class="muted">Popular • Serves 1</div><div class="price">₦3,500</div><button class="btn btn-primary" style="width:100%">Add +</button></div></div>
+</div>
+<h2>5. Inputs (Phone +234, Search, Qty)</h2>
+<input placeholder="Search jollof, pizza, shawarma..." style="width:100%"><br>
+<input value="+234 801 234 5678" style="width:220px"> <input type="number" value="2" style="width:80px"> Qty stepper − 2 +
+<h2>6. Cart Summary</h2>
+<div class="cart"><div class="row"><span>Subtotal</span><span>₦7,000</span></div><div class="row"><span>Delivery fee</span><span>₦800</span></div><div class="row"><span>Service</span><span>₦350</span></div><div class="row"><span>Discount</span><span style="color:#1A9E50">−₦500</span></div><div class="row total"><span>Total</span><span>₦7,650</span></div></div>
+<h2>7. Order Tracking</h2>
+<div class="timeline"><div><span class="dot"></span>Received ✓</div><div><span class="dot"></span>Accepted ✓</div><div><span class="dot"></span>Preparing (now)</div><div><span class="dot" style="background:#ddd"></span>Ready</div><div><span class="dot" style="background:#ddd"></span>Picked Up</div><div><span class="dot" style="background:#ddd"></span>On the Way</div><div><span class="dot" style="background:#ddd"></span>Delivered</div></div>
+<p class="muted">Status wording matches PRD exactly. Live map (OSM/Leaflet) plugs in here.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+# Free local stack: Postgres+PostGIS, Redis, MinIO (S3-compatible). No paid services.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: food
+      POSTGRES_PASSWORD: food
+      POSTGRES_DB: fooddb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+  api:
+    build: ./api
+    ports:
+      - "4000:4000"
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+  web:
+    build: ./apps/web-customer
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

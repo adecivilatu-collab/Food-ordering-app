@@ -48,22 +48,24 @@ Exit: Every MVP screen buildable with zero new styles.
 Deliverables: sitemap + route/auth table + wireframes covering PRD §4-15.
 Exit: No missing screen; status wording matches PRD exactly.
 
-## Phase 3 — Architectural Decisions (ADRs — record these)
-**Objective:** Lock decisions to avoid rework. Modular monolith first, split later.
+## Phase 3 — Architectural Decisions (ADRs — FREE ONLY, no pay now)
+**Objective:** $0 upfront for MVP dev. Pay only when you go live / scale. Modular monolith first, split later.
 
-ADR-1 Frontend: React + Next.js PWA first (installable, offline cache, works on low-end Android, cheap data). Native (Flutter/RN) later for rider GPS only. Same REST API for all.
-ADR-2 Backend: Modular monolith (NestJS or Django): modules auth, geo/catalog, cart/orders, payments, delivery, notify, reviews, support, promo/loyalty, admin. Monorepo: `/apps/web-customer`, `/apps/restaurant`, `/apps/rider`, `/apps/admin`, `/api`, `/packages/ui-tokens`.
-ADR-3 Data: PostgreSQL + PostGIS (zones/distance) as truth; Redis (cart/session/ETA/rate-limit/OTP); S3-compatible (images). Money in kobo.
-ADR-4 Realtime: WebSocket/SSE for status + rider pings, with SMS/poll fallback for poor network.
-ADR-5 Maps/Geo: Google/Mapbox geocode + distance; Lagos traffic ETA buffer; delivery zones as polygons per restaurant.
-ADR-6 Auth: Phone OTP + email, JWT access/refresh, guest via signed sessionId; RBAC middleware per role.
-ADR-7 Payments: Paystack/Flutterwave behind `PaymentProvider` interface + COD flag. Webhooks + reconciliation job. Idempotency keys on order-create + pay.
-ADR-8 Notifications: Template service (SMS/push/in-app/email) for all §22 events; queue-backed.
-ADR-9 Hosting/DevOps: Vercel/Render-style frontend + container API, staging+prod, CDN images, nightly DB backups, audit logs, feature flags (COD, promos, new city).
-Alternative considered: microservices day-1 — rejected (ops overhead, low initial volume).
+ADR-1 Frontend (free): React + Next.js (MIT, free) + PWA. Host dev on Vercel Free / Netlify Free / Cloudflare Pages Free. Native later; same REST API for all.
+ADR-2 Backend (free): NestJS (MIT) or Django (BSD) — both free. Monorepo: `/apps/web-customer`, `/apps/restaurant`, `/apps/rider`, `/apps/admin`, `/api`, `/packages/ui-tokens`. Run locally via Docker; host later on Render Free / Fly.io free allowance / Oracle Always Free.
+ADR-3 Data (free): PostgreSQL + PostGIS (both free OSS) via Docker locally. Hosted free when needed: Supabase Free / Neon Free for Postgres; Upstash Free / Redis Cloud Free for Redis; MinIO (free, S3-compatible) locally, Supabase Storage Free or Cloudinary Free later. Money in kobo.
+ADR-4 Realtime (free): Self-hosted Socket.io / SSE (free, no Pusher/Ably). Poll fallback for poor network.
+ADR-5 Maps/Geo (free): OpenStreetMap + Nominatim (free geocode) + Leaflet (free map UI) + OSRM (free distance/ETA). Avoid Google/Mapbox billing now; switch later if needed. Lagos traffic buffer stays in code.
+ADR-6 Auth (free now): Email OTP/magic-link (free via Nodemailer/Resend Free) + JWT + guest sessionId + RBAC. Phone SMS OTP DEFERRED — SMS always costs (Termii/Twilio). Dev: log OTP to console; add SMS provider only at pilot.
+ADR-7 Payments (free in test): Paystack/Flutterwave TEST mode = free (no upfront; they take % only on live). COD = free always. Webhooks + reconciliation job included. Go-live KYC later.
+ADR-8 Notifications (free now): In-app + email (free) + FCM push (free). SMS DEFERRED to pilot (costs per SMS).
+ADR-9 Hosting/DevOps (free): GitHub Free + GitHub Actions Free (CI lint/test/build), Docker Compose local, staging on free tiers, nightly pg_dump backups, audit logs, feature flags (COD, promos, new city) via env/config (free, no LaunchDarkly).
+Alternative considered: paid maps/SMS/Pusher/microservices day-1 — rejected (unnecessary cost).
 
-Deliverables: ADR doc + repo scaffold + CI (lint/test/build) + seed categories.
-Exit: Team can build vertical slice without revisiting stack.
+What still costs at launch (not now): SMS per message, live payment %, custom domain (~$10/yr), VPS if you outgrow free tier.
+
+Deliverables: ADR doc + Docker Compose scaffold + CI (free) + seed categories.
+Exit: Team builds vertical slice with $0 spend.
 
 ## Phase 4 — Data Model, API & Domain Rules
 Tables: users, addresses, restaurants (zones[], fee_base, min_order, hours json, cod_enabled, commission_%), menu_categories, menu_items (price_kobo, available, popular), item_options (choices+delta), carts (single-restaurant enforced), orders (items snapshot, amounts snapshot, address snapshot, status, timeline json, rider_id), deliveries, payments (provider, reference, webhook_log), promos (scope/type/rules/validity), reviews (restaurant/food/delivery + response + moderation), support_tickets, refunds, riders (vehicle/docs/approval/earnings), audit_logs.
@@ -114,6 +116,6 @@ Loyalty/referrals, recommendations, subscriptions, corporate/catering, scheduled
 Tokens → Components → Routes → ADRs/scaffold → Data/API → Customer slice → Restaurant/Rider/Admin → Payments → Tracking/notify → Trust/ops → Security/perf/test → Pilot launch.
 
 ## Next actions
-1. Approve ADRs (Next.js PWA + modular NestJS/Django + Postgres/PostGIS + Redis + Paystack/Flutterwave).
-2. Start Phase 1 tokens + Phase 3 scaffold in parallel.
-3. Freeze Lagos pilot zone + fee table.
+1. Approve FREE ADRs (Next.js free + NestJS/Django free + Postgres/PostGIS Docker + OSM/Leaflet + test-mode payments + email/in-app notify).
+2. Start Phase 1 tokens + Phase 3 Docker scaffold in parallel ($0).
+3. Freeze Lagos pilot zone + fee table. Add SMS/maps paid providers only at pilot.

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Food Marketplace — Home</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px;position:sticky;top:0}
+header input{width:100%;max-width:480px;border:0;border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16)}
+.wrap{max-width:960px;margin:auto;padding:16px}
+.cats{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+.cat{background:var(--color-surface);border:1px solid var(--color-accent);border-radius:999px;padding:8px 14px;white-space:nowrap;font-size:var(--fs-14)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);overflow:hidden}
+.card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--color-surface)}
+.card .b{padding:12px}.price{font-size:var(--fs-16);font-weight:700}
+.muted{color:var(--color-muted);font-size:var(--fs-14)}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:var(--fs-12);font-weight:700}
+.open{background:var(--color-success);color:#fff}.closed{background:var(--color-muted);color:#fff}.promo{background:var(--color-accent)}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700;width:100%}
+</style>
+</head>
+<body>
+<header><b>🍲 Food Marketplace — Lagos</b><br><input id="q" placeholder="Search jollof, pizza, shawarma..."></header>
+<div class="wrap">
+<div class="cats" id="cats"></div>
+<h2>Nearby Restaurants</h2>
+<div class="grid" id="list"><p class="muted">Loading... (start API: npm run dev --workspace api)</p></div>
+</div>
+<script>
+const API = "http://localhost:4000";
+async function load(f = "") {
+  try {
+    const cats = await (await fetch(API + "/categories")).json();
+    document.getElementById("cats").innerHTML = cats.categories.map((c) => `<span class="cat">${c}</span>`).join("");
+    const r = await (await fetch(API + "/restaurants" + (f ? "?cuisine=" + encodeURIComponent(f) : ""))).json();
+    document.getElementById("list").innerHTML = r.restaurants.map((x) => `
+      <div class="card"><img alt="${x.name}">
+        <div class="b"><b>${x.name}</b><div class="muted">${x.cuisines.join(" • ")} • ${x.eta_min} min • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
+        <span class="badge ${x.open ? "open" : "closed"}">${x.open ? "Open" : "Closed"}</span>
+        ${x.promo ? `<span class="badge promo">${x.promo}</span>` : ""} ⭐ ${x.rating} (${x.reviews})
+        <p><button onclick="alert('Menu: GET /r/${x.id}/menu')">View Menu</button></p></div></div>`).join("") || "<p>No matches.</p>";
+  } catch (e) { document.getElementById("list").innerHTML = "<p>API offline — start it first.</p>"; }
+}
+document.getElementById("q").addEventListener("change", (e) => load(e.target.value));
+load();
+</script>
+</body>
+</html>

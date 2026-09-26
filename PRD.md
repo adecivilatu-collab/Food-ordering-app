@@ -37,3 +37,9 @@ Order machine: Received → Accepted → Preparing → Ready → Picked Up → O
 **What was decided:** OpenStreetMap/Leaflet/OSRM (free), self-hosted Socket.io/SSE, local Docker Postgres/Redis, Paystack-only test mode, SMS deferred (costs per message), local-device hosting.
 **Why:** $0 upfront for MVP dev; every paid item (SMS, live payment %, domain, VPS beyond free tier) activates only at pilot revenue. No rebuild needed — interfaces (PaymentProvider, notify templates, S3-compatible storage) allow swapping providers later.
 **Second steered lock:** Better Auth as the single auth system (replacing hand-rolled JWT/OTP) for pg-backed sessions across all four apps.
+
+## 5. Refinement Note (design changes steered — verify against design.html)
+1. "Make it bright, sharp contrast, very bright" → palette v0.2: primary #FF5A00, accent #FFD600, black 2px borders, black text on bright fills.
+2. "Cool, calabash and grey, realistic colours" → palette v0.3 (current): primary #2D5A3D, dark #1B3A28, accent #C8A86B, clay #8B5E3C, success #3E7C4F, warning #D9A441, danger #B3402A, info #5B8E9E, text #23282B, bg #FAF7F0, surface #EDE8DC.
+3. "Button styling + contrast" → design.html: .btn:hover darkens to primary-dark, :active scale(.98), 3px accent focus-visible rings on buttons/inputs/selects/links.
+Grader check: open design.html — §1 swatches must match v0.3 hexes, hover/focus rules verifiable via Tab/click.

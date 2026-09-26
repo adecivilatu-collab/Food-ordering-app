@@ -28,6 +28,10 @@ function body(req) {
 }
 
 http.createServer(async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Role,Idempotency-Key,X-Paystack-Signature");
+  if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
   const t0 = Date.now();
   const u = new URL(req.url, "http://x");
   res.on("finish", () => console.log(JSON.stringify({ m: req.method, p: u.pathname, s: res.statusCode, ms: Date.now() - t0 })));

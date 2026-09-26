@@ -19,7 +19,7 @@ CREATE TABLE restaurants (
   name TEXT NOT NULL, image TEXT, cuisines TEXT[] DEFAULT '{}',
   rating_avg NUMERIC(3,2) DEFAULT 0, status TEXT DEFAULT 'pending',
   delivery_fee_kobo INT DEFAULT 0, min_order_kobo INT DEFAULT 0,
-  open_hours JSONB DEFAULT '{}', geom GEOMETRY(Point, 4327),
+  open_hours JSONB DEFAULT '{}', geom GEOMETRY(Point, 4326),
   delivery_zones JSONB DEFAULT '[]', cod_enabled BOOLEAN DEFAULT true,
   commission_pct NUMERIC(5,2) DEFAULT 0
 );

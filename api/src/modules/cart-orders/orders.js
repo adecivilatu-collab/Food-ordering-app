@@ -34,4 +34,5 @@ function checkout({ session, address, contact, payment_method, idempotencyKey, r
   return { order };
 }
 function get(id) { return orders.get(id) || null; }
-module.exports = { checkout, get };
+function list() { return [...orders.values()]; }
+module.exports = { checkout, get, list };

@@ -6,6 +6,7 @@ const catalog = require("./modules/catalog");
 const cart = require("./modules/cart-orders/cart");
 const orders = require("./modules/cart-orders/orders");
 const status = require("./modules/delivery/status");
+const rider = require("./modules/delivery/rider");
 const restaurant = require("./modules/catalog/restaurant");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
@@ -78,6 +79,9 @@ http.createServer(async (req, res) => {
     if (!o) return json(res, 404, { error: "not found" });
     const b = await body(req);
     const r = status.advance(o, b.to, req.headers["x-role"] || "admin");
+    if (!r.error && b.to === "delivered" && o.rider_id) {
+      rider.credit(o.rider_id, Math.round((o.fee_kobo || 0) * 0.7), o.id);
+    }
     return r.error ? json(res, r.code || 400, r) : json(res, 200, r);
   }
   if (u.pathname.startsWith("/orders/") && u.pathname.endsWith("/assign") && req.method === "POST") {
@@ -105,6 +109,22 @@ http.createServer(async (req, res) => {
   if (u.pathname === "/restaurant/promos" && req.method === "POST") {
     const b = await body(req);
     return json(res, 201, restaurant.createPromo(b));
+  }
+  if (u.pathname === "/rider/register" && req.method === "POST") {
+    const b = await body(req);
+    return json(res, 201, rider.register(b));
+  }
+  if (u.pathname.startsWith("/rider/") && u.pathname.endsWith("/approve") && req.method === "POST") {
+    const r = rider.approve(u.pathname.split("/")[2]);
+    return r.error ? json(res, 404, r) : json(res, 200, r);
+  }
+  if (u.pathname === "/rider/requests") {
+    const avail = orders.list().filter((o) => o.order_status === "ready" && !o.rider_id);
+    return json(res, 200, { requests: avail });
+  }
+  if (u.pathname.startsWith("/rider/") && u.pathname.endsWith("/earnings")) {
+    const r = rider.get(u.pathname.split("/")[2]);
+    return r ? json(res, 200, { earnings_kobo: r.earnings_kobo, history: r.history }) : json(res, 404, { error: "not found" });
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

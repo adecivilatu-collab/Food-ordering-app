@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Preview — Food Marketplace (Calabash Cool v0.3)</title>
+<link rel="stylesheet" href="packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:24px;border-bottom:6px solid var(--color-accent)}
+.wrap{max-width:900px;margin:auto;padding:20px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.swatch{border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--color-accent)}
+.swatch div{height:52px}.swatch p{margin:0;padding:8px;font-size:var(--fs-12);background:#fff}
+.btn{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:12px 24px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700;cursor:pointer}
+.btn-accent{background:var(--color-accent);color:var(--color-text)}
+.field{margin:12px 0}label{font-size:var(--fs-14);color:var(--color-muted)}
+input,select{width:100%;box-sizing:border-box;border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);margin-top:4px;background:#fff;color:var(--color-text)}
+.card{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);padding:16px;margin-top:16px}
+.price{font-size:var(--fs-20);font-weight:800}
+</style>
+</head>
+<body>
+<header><h1 style="margin:0">🍲 Design Preview — Calabash Cool</h1><p style="margin:4px 0">Deep gourd green • dried-gourd tan • clay • stone grey</p></header>
+<div class="wrap">
+<h2>1. Colors</h2>
+<div class="swatches">
+<div class="swatch"><div style="background:#2D5A3D"></div><p>Primary #2D5A3D</p></div>
+<div class="swatch"><div style="background:#1B3A28"></div><p>Dark #1B3A28</p></div>
+<div class="swatch"><div style="background:#C8A86B"></div><p>Accent #C8A86B</p></div>
+<div class="swatch"><div style="background:#8B5E3C"></div><p>Clay #8B5E3C</p></div>
+<div class="swatch"><div style="background:#3E7C4F"></div><p>Success #3E7C4F</p></div>
+<div class="swatch"><div style="background:#D9A441"></div><p>Warning #D9A441</p></div>
+<div class="swatch"><div style="background:#B3402A"></div><p>Danger #B3402A</p></div>
+<div class="swatch"><div style="background:#5B8E9E"></div><p>Info #5B8E9E</p></div>
+</div>
+<h2>2. Typography</h2>
+<p style="font-size:var(--fs-32);font-weight:700;margin:4px 0">Heading 32 — Jollof Rice</p>
+<p style="font-size:var(--fs-20);margin:4px 0">Body 20 — Mama Put Kitchen</p>
+<p style="font-size:var(--fs-16);margin:4px 0">Price 16 — <b>₦3,500</b></p>
+<p style="font-size:var(--fs-14);color:var(--color-muted);margin:4px 0">Muted 14 — 25 min • ₦800 delivery fee</p>
+<h2>3. Styled Buttons</h2>
+<button class="btn">Order Now</button>
+<button class="btn btn-accent">Free Delivery</button>
+<h2>4. Sample Inputs</h2>
+<div class="field"><label>Search food</label><input placeholder="Try jollof, pizza, shawarma..."></div>
+<div class="field"><label>Phone (+234)</label><input value="+2348012345678"></div>
+<div class="field"><label>Customize — protein</label><select><option>Chicken</option><option>Beef</option><option>Fish (+₦500)</option></select></div>
+<div class="card"><b>Chicken Jollof + Plantain</b><div class="price">₦3,500</div><p style="color:var(--color-muted);font-size:var(--fs-14)">Popular • Serves 1 • Ready in 25 min</p><button class="btn">Add to Cart +</button></div>
+</div>
+</body>
+</html>

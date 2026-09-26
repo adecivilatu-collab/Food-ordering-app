@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cart & Checkout</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px}
+.wrap{max-width:640px;margin:auto;padding:16px}
+.row{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);padding:12px;margin:8px 0}
+.fees{background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;margin:12px 0}
+.fees div{display:flex;justify-content:space-between;padding:4px 0}
+.total{font-weight:800;font-size:var(--fs-20);border-top:2px solid var(--color-accent);margin-top:8px;padding-top:8px}
+input,select{width:100%;border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);margin:6px 0;box-sizing:border-box}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:14px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700;width:100%}
+.ok{background:var(--color-success);color:#fff;border-radius:var(--radius-lg);padding:16px;margin:12px 0}
+</style>
+</head>
+<body>
+<header><a href="index.html" style="color:var(--color-accent)">← Home</a><h2 style="margin:4px 0">Cart & Checkout</h2></header>
+<div class="wrap">
+<div id="cart"></div>
+<h3>Delivery & Payment</h3>
+<input id="name" placeholder="Name"><input id="phone" value="+2348012345678">
+<input id="addr" placeholder="Delivery address / label">
+<select id="pay"><option value="card">Card (Paystack test)</option><option value="transfer">Bank Transfer</option><option value="ussd">USSD</option><option value="wallet">Wallet</option><option value="cod">Cash on Delivery</option></select>
+<button onclick="checkout()">Confirm Order</button>
+<div id="done"></div>
+</div>
+<script>
+const API = "http://localhost:4000";
+const SESSION = localStorage.getItem("session");
+async function load() {
+  const c = await (await fetch(API + "/cart?session=" + SESSION)).json();
+  const fee = 80000, service = Math.round((c.subtotal_kobo || 0) * 0.05);
+  const total = (c.subtotal_kobo || 0) + (c.lines.length ? fee + service : 0);
+  document.getElementById("cart").innerHTML = (c.lines.map((l) => `<div class="row"><b>${l.name} × ${l.qty}</b><div>₦${(l.line_kobo / 100).toLocaleString()}</div></div>`).join("") || "<p>Cart is empty.</p>") +
+    `<div class="fees"><div><span>Subtotal</span><span>₦${((c.subtotal_kobo || 0) / 100).toLocaleString()}</span></div><div><span>Delivery</span><span>₦${c.lines.length ? (fee / 100).toLocaleString() : 0}</span></div><div><span>Service 5%</span><span>₦${c.lines.length ? (service / 100).toLocaleString() : 0}</span></div><div class="total"><span>Total</span><span>₦${(total / 100).toLocaleString()}</span></div></div>`;
+}
+async function checkout() {
+  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value }, payment_method: document.getElementById("pay").value }) })).json();
+  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b><br>Total ₦${(r.order.total_kobo / 100).toLocaleString()} • ${r.order.payment_method.toUpperCase()} • Status: ${r.order.order_status}<br>Track: GET /track/${r.order.id}</div>`;
+  load();
+}
+load();
+</script>
+</body>
+</html>

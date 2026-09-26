@@ -40,7 +40,7 @@ async function load(f = "") {
         <div class="b"><b>${x.name}</b><div class="muted">${x.cuisines.join(" • ")} • ${x.eta_min} min • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
         <span class="badge ${x.open ? "open" : "closed"}">${x.open ? "Open" : "Closed"}</span>
         ${x.promo ? `<span class="badge promo">${x.promo}</span>` : ""} ⭐ ${x.rating} (${x.reviews})
-        <p><button onclick="alert('Menu: GET /r/${x.id}/menu')">View Menu</button></p></div></div>`).join("") || "<p>No matches.</p>";
+        <p><a href="restaurant.html?id=${x.id}"><button>View Menu</button></a></p></div></div>`).join("") || "<p>No matches.</p>";
   } catch (e) { document.getElementById("list").innerHTML = "<p>API offline — start it first.</p>"; }
 }
 document.getElementById("q").addEventListener("change", (e) => load(e.target.value));

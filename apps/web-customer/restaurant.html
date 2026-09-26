@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurant Menu</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px}
+.wrap{max-width:960px;margin:auto;padding:16px}
+.item{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);padding:12px;margin:10px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.price{font-size:var(--fs-16);font-weight:700}.muted{color:var(--color-muted);font-size:var(--fs-14)}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:12px 18px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700}
+select,input{border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:10px;font-size:var(--fs-16)}
+#bar{position:sticky;bottom:0;background:var(--color-primary-dark);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+#bar a{color:var(--color-accent);font-weight:700}
+</style>
+</head>
+<body>
+<header><a href="index.html" style="color:var(--color-accent)">← Home</a><h2 id="name" style="margin:4px 0">Restaurant</h2><div class="muted" id="info" style="color:#eee"></div></header>
+<div class="wrap"><div id="menu"><p class="muted">Loading menu...</p></div></div>
+<div id="bar"><span id="count">Cart: 0 items</span><a href="cart.html">Go to Cart →</a></div>
+<script>
+const API = "http://localhost:4000";
+const id = new URLSearchParams(location.search).get("id") || "r1";
+let SESSION = localStorage.getItem("session");
+if (!SESSION) { fetch(API + "/guest/session").then((r) => r.json()).then((j) => { SESSION = j.session; localStorage.setItem("session", SESSION); }); }
+async function load() {
+  const r = await (await fetch(API + "/r/" + id)).json();
+  document.getElementById("name").textContent = r.name;
+  document.getElementById("info").textContent = `${r.cuisines.join(" • ")} • ⭐ ${r.rating} (${r.reviews}) • ${r.eta_min} min`;
+  const m = await (await fetch(API + "/r/" + id + "/menu")).json();
+  document.getElementById("menu").innerHTML = m.menu.map((f) => `
+    <div class="item"><div><b>${f.name}</b><div class="price">₦${(f.price_kobo / 100).toLocaleString()}</div>
+    ${f.options ? f.options.map((o) => `<select data-f="${f.id}" data-t="${o.type}">${o.choices.map((c) => `<option>${c.name}${c.delta_kobo ? " (+₦" + (c.delta_kobo / 100).toLocaleString() + ")" : ""}</option>`).join("")}</select>`).join("") : ""}</div>
+    <button onclick="add('${f.id}')">Add +</button></div>`).join("");
+  refresh();
+}
+async function add(item_id) {
+  const options = {};
+  document.querySelectorAll(`select[data-f="${item_id}"]`).forEach((s) => (options[s.dataset.t] = s.value.split(" (+")[0]));
+  await fetch(API + "/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, item_id, qty: 1, options }) });
+  refresh();
+}
+async function refresh() {
+  if (!SESSION) return;
+  const c = await (await fetch(API + "/cart?session=" + SESSION)).json();
+  const n = c.lines.reduce((s, l) => s + l.qty, 0);
+  document.getElementById("count").textContent = `Cart: ${n} items • ₦${((c.subtotal_kobo || 0) / 100).toLocaleString()}`;
+}
+load();
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ const auth = require("./modules/auth");
 const catalog = require("./modules/catalog");
 const cart = require("./modules/cart-orders/cart");
 const orders = require("./modules/cart-orders/orders");
+const status = require("./modules/delivery/status");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
 
@@ -69,6 +70,21 @@ http.createServer(async (req, res) => {
       return json(res, 401, { error: "phone required" });
     }
     return json(res, 200, o);
+  }
+  if (u.pathname.startsWith("/orders/") && u.pathname.endsWith("/status") && req.method === "PATCH") {
+    const id = u.pathname.split("/")[2];
+    const o = orders.get(id);
+    if (!o) return json(res, 404, { error: "not found" });
+    const b = await body(req);
+    const r = status.advance(o, b.to, req.headers["x-role"] || "admin");
+    return r.error ? json(res, r.code || 400, r) : json(res, 200, r);
+  }
+  if (u.pathname.startsWith("/orders/") && u.pathname.endsWith("/assign") && req.method === "POST") {
+    const id = u.pathname.split("/")[2];
+    const o = orders.get(id);
+    if (!o) return json(res, 404, { error: "not found" });
+    const b = await body(req);
+    return json(res, 200, status.assign(o, b.rider_id || "rider1"));
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

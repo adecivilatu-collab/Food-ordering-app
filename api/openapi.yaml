@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info: {title: Food Marketplace API, version: 0.1.0}
+paths:
+  /health: {get: {responses: {'200': {description: ok}}}}
+  /restaurants:
+    get:
+      summary: Search/filter restaurants (public)
+      parameters:
+        - {name: cuisine, in: query, schema: {type: string}}
+        - {name: open, in: query, schema: {type: boolean}}
+        - {name: max_fee_kobo, in: query, schema: {type: integer}}
+      responses: {'200': {description: list}}
+  /r/{id}: {get: {summary: Restaurant + menu (public), responses: {'200': {description: detail}}}}
+  /cart:
+    post: {summary: Upsert cart line (guest, idempotency-key), responses: {'200': {description: cart}}}
+  /checkout:
+    post: {summary: Create order from cart (guest/registered, idempotency-key), responses: {'201': {description: order}}}
+  /order/{id}: {get: {summary: Confirmation + tracking (guest phone+orderNo or JWT), responses: {'200': {description: order}}}}
+  /orders/{id}/status:
+    patch: {summary: Advance state machine (restaurant/rider/admin, RBAC), responses: {'200': {description: order}}}
+  /payments/webhook:
+    post: {summary: Provider webhook (signature verify), responses: {'200': {description: ack}}}
+components:
+  parameters:
+    IdempotencyKey: {name: Idempotency-Key, in: header, required: false, schema: {type: string}}

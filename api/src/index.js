@@ -9,6 +9,7 @@ const status = require("./modules/delivery/status");
 const rider = require("./modules/delivery/rider");
 const admin = require("./modules/admin");
 const engage = require("./modules/engagement");
+const paystack = require("./modules/payments/paystack");
 const restaurant = require("./modules/catalog/restaurant");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
@@ -161,6 +162,27 @@ http.createServer(async (req, res) => {
   if (u.pathname === "/support" && req.method === "POST") {
     const b = await body(req);
     return json(res, 201, engage.ticket(b));
+  }
+  if (u.pathname === "/payments/initialize" && req.method === "POST") {
+    const b = await body(req);
+    const o = orders.get(b.order_id);
+    if (!o) return json(res, 404, { error: "order not found" });
+    return json(res, 200, paystack.initialize(o));
+  }
+  if (u.pathname === "/payments/webhook" && req.method === "POST") {
+    let raw = "";
+    await new Promise((resolve) => { req.on("data", (c) => (raw += c)); req.on("end", resolve); });
+    const sig = req.headers["x-paystack-signature"];
+    if (!paystack.verifyWebhook(raw, sig)) return json(res, 401, { error: "bad signature" });
+    let evt = {}; try { evt = JSON.parse(raw); } catch {}
+    const ref = evt.reference || (evt.data && evt.data.reference);
+    const p = paystack.payments.get(ref);
+    if (p) {
+      p.status = "paid";
+      const o = orders.get(p.order_id);
+      if (o) { o.payment_status = "paid"; o.timeline.push({ status: o.order_status, event: "payment_paid", at: new Date().toISOString() }); }
+    }
+    return json(res, 200, { ack: true });
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

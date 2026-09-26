@@ -7,6 +7,7 @@ const cart = require("./modules/cart-orders/cart");
 const orders = require("./modules/cart-orders/orders");
 const status = require("./modules/delivery/status");
 const rider = require("./modules/delivery/rider");
+const admin = require("./modules/admin");
 const restaurant = require("./modules/catalog/restaurant");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
@@ -125,6 +126,15 @@ http.createServer(async (req, res) => {
   if (u.pathname.startsWith("/rider/") && u.pathname.endsWith("/earnings")) {
     const r = rider.get(u.pathname.split("/")[2]);
     return r ? json(res, 200, { earnings_kobo: r.earnings_kobo, history: r.history }) : json(res, 404, { error: "not found" });
+  }
+  if (u.pathname === "/admin/orders") return json(res, 200, { orders: orders.list() });
+  if (u.pathname === "/admin/payments") {
+    return json(res, 200, { payments: orders.list().map((o) => ({ order_id: o.id, method: o.payment_method, status: o.payment_status, total_kobo: o.total_kobo })) });
+  }
+  if (u.pathname === "/admin/promos") return json(res, 200, { promos: restaurant.promos });
+  if (u.pathname === "/admin/refunds" && req.method === "POST") {
+    const b = await body(req);
+    return json(res, 201, admin.refund(b));
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

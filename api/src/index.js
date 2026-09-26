@@ -11,6 +11,15 @@ const admin = require("./modules/admin");
 const engage = require("./modules/engagement");
 const paystack = require("./modules/payments/paystack");
 const notify = require("./modules/notify");
+let baHandler = null;
+async function betterAuthHandler(req, res) {
+  if (!baHandler) {
+    const { toNodeHandler } = await import("better-auth/node");
+    const { auth } = await import("./auth.mjs");
+    baHandler = toNodeHandler(auth);
+  }
+  return baHandler(req, res);
+}
 const restaurant = require("./modules/catalog/restaurant");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
@@ -54,6 +63,10 @@ http.createServer(async (req, res) => {
   if (u.pathname.startsWith("/r/")) {
     const r = catalog.detail(u.pathname.slice(3));
     return r ? json(res, 200, r) : json(res, 404, { error: "not found" });
+  }
+  if (u.pathname.startsWith("/api/auth/")) {
+    if (!process.env.BETTER_AUTH_URL) process.env.BETTER_AUTH_URL = `http://localhost:${port}`;
+    return betterAuthHandler(req, res);
   }
   if (u.pathname === "/auth/otp/request" && req.method === "POST") {
     const b = await body(req);

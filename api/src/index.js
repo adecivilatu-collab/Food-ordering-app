@@ -4,6 +4,7 @@ const { URL } = require("url");
 const auth = require("./modules/auth");
 const catalog = require("./modules/catalog");
 const cart = require("./modules/cart-orders/cart");
+const orders = require("./modules/cart-orders/orders");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
 
@@ -54,6 +55,20 @@ http.createServer(async (req, res) => {
   if (u.pathname === "/cart/clear" && req.method === "POST") {
     const b = await body(req);
     return json(res, 200, cart.clear(b.session || "dev"));
+  }
+  if (u.pathname === "/checkout" && req.method === "POST") {
+    const b = await body(req);
+    const rest = catalog.detail((cart.get(b.session || "dev").restaurant_id) || "");
+    const r = orders.checkout({ ...b, session: b.session || "dev", restaurant: rest, idempotencyKey: req.headers["idempotency-key"] });
+    return r.error ? json(res, 400, r) : json(res, r.duplicate ? 200 : 201, r);
+  }
+  if (u.pathname.startsWith("/order/")) {
+    const o = orders.get(u.pathname.slice(7));
+    if (!o) return json(res, 404, { error: "not found" });
+    if (!req.headers.authorization && o.contact && o.contact.phone && u.searchParams.get("phone") !== o.contact.phone) {
+      return json(res, 401, { error: "phone required" });
+    }
+    return json(res, 200, o);
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

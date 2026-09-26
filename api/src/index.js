@@ -10,6 +10,7 @@ const rider = require("./modules/delivery/rider");
 const admin = require("./modules/admin");
 const engage = require("./modules/engagement");
 const paystack = require("./modules/payments/paystack");
+const notify = require("./modules/notify");
 const restaurant = require("./modules/catalog/restaurant");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
@@ -66,6 +67,7 @@ http.createServer(async (req, res) => {
     const b = await body(req);
     const rest = catalog.detail((cart.get(b.session || "dev").restaurant_id) || "");
     const r = orders.checkout({ ...b, session: b.session || "dev", restaurant: rest, idempotencyKey: req.headers["idempotency-key"] });
+    if (!r.error && !r.duplicate) { r.order.eta_min = 30; notify.send("confirmation", r.order); }
     return r.error ? json(res, 400, r) : json(res, r.duplicate ? 200 : 201, r);
   }
   if (u.pathname.startsWith("/order/")) {
@@ -82,8 +84,9 @@ http.createServer(async (req, res) => {
     if (!o) return json(res, 404, { error: "not found" });
     const b = await body(req);
     const r = status.advance(o, b.to, req.headers["x-role"] || "admin");
-    if (!r.error && b.to === "delivered" && o.rider_id) {
-      rider.credit(o.rider_id, Math.round((o.fee_kobo || 0) * 0.7), o.id);
+    if (!r.error) {
+      if (b.to === "delivered" && o.rider_id) rider.credit(o.rider_id, Math.round((o.fee_kobo || 0) * 0.7), o.id);
+      notify.send(b.to, o);
     }
     return r.error ? json(res, r.code || 400, r) : json(res, 200, r);
   }
@@ -128,6 +131,11 @@ http.createServer(async (req, res) => {
   if (u.pathname.startsWith("/rider/") && u.pathname.endsWith("/earnings")) {
     const r = rider.get(u.pathname.split("/")[2]);
     return r ? json(res, 200, { earnings_kobo: r.earnings_kobo, history: r.history }) : json(res, 404, { error: "not found" });
+  }
+  if (u.pathname.startsWith("/track/")) {
+    const o = orders.get(u.pathname.slice(7));
+    if (!o) return json(res, 404, { error: "not found" });
+    return json(res, 200, { order_no: o.order_no, status: o.order_status, eta_min: o.eta_min || 30, rider_id: o.rider_id || null, timeline: o.timeline });
   }
   if (u.pathname === "/admin/orders") return json(res, 200, { orders: orders.list() });
   if (u.pathname === "/admin/payments") {

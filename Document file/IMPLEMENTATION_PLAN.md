@@ -53,13 +53,13 @@ Exit: No missing screen; status wording matches PRD exactly.
 
 ADR-1 Frontend (free): React + Next.js (MIT, free) + PWA. Host dev on Vercel Free / Netlify Free / Cloudflare Pages Free. Native later; same REST API for all.
 ADR-2 Backend (free): NestJS (MIT) or Django (BSD) — both free. Monorepo: `/apps/web-customer`, `/apps/restaurant`, `/apps/rider`, `/apps/admin`, `/api`, `/packages/ui-tokens`. Run locally via Docker; host later on Render Free / Fly.io free allowance / Oracle Always Free.
-ADR-3 Data (free): PostgreSQL + PostGIS (both free OSS) via Docker locally. Hosted free when needed: Supabase Free / Neon Free for Postgres; Upstash Free / Redis Cloud Free for Redis; MinIO (free, S3-compatible) locally, Supabase Storage Free or Cloudinary Free later. Money in kobo.
+ADR-3 Data (LOCKED): LOCAL PostgreSQL + PostGIS via Docker as truth; Redis for cart/session/ETA; Cloudflare R2 for images. Money in kobo.
 ADR-4 Realtime (free): Self-hosted Socket.io / SSE (free, no Pusher/Ably). Poll fallback for poor network.
 ADR-5 Maps/Geo (free): OpenStreetMap + Nominatim (free geocode) + Leaflet (free map UI) + OSRM (free distance/ETA). Avoid Google/Mapbox billing now; switch later if needed. Lagos traffic buffer stays in code.
-ADR-6 Auth (free now): Email OTP/magic-link (free via Nodemailer/Resend Free) + JWT + guest sessionId + RBAC. Phone SMS OTP DEFERRED — SMS always costs (Termii/Twilio). Dev: log OTP to console; add SMS provider only at pilot.
-ADR-7 Payments (free in test): Paystack/Flutterwave TEST mode = free (no upfront; they take % only on live). COD = free always. Webhooks + reconciliation job included. Go-live KYC later.
-ADR-8 Notifications (free now): In-app + email (free) + FCM push (free). SMS DEFERRED to pilot (costs per SMS).
-ADR-9 Hosting/DevOps (free): GitHub Free + GitHub Actions Free (CI lint/test/build), Docker Compose local, staging on free tiers, nightly pg_dump backups, audit logs, feature flags (COD, promos, new city) via env/config (free, no LaunchDarkly).
+ADR-6 Auth (LOCKED): Better Auth always (all apps). Email via ZeptoMail; phone OTP console in dev, SMS deferred. Guest via sessionId; RBAC middleware per role.
+ADR-7 Payments (LOCKED): Paystack only, test mode free + COD flag. Webhooks + reconciliation job. Idempotency keys on order-create + pay.
+ADR-8 Notifications (LOCKED): ZeptoMail templates (free tier) + in-app + FCM push free; SMS deferred to pilot.
+ADR-9 Hosting (LOCKED): LOCAL DEVICE via Docker Compose. No cloud deploy until pilot. GitHub Free + Actions Free CI, nightly pg_dump, audit logs, env feature flags.
 Alternative considered: paid maps/SMS/Pusher/microservices day-1 — rejected (unnecessary cost).
 
 What still costs at launch (not now): SMS per message, live payment %, custom domain (~$10/yr), VPS if you outgrow free tier.

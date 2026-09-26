@@ -1,10 +1,11 @@
-# ADR — Free-only decisions (no pay now)
-- Frontend: Next.js (MIT) on Vercel/Netlify/Cloudflare free tier.
-- Backend: NestJS/Django (free) via Docker Compose.
-- Data: Postgres+PostGIS, Redis, MinIO — all free OSS; hosted free tiers (Supabase/Neon/Upstash) only if needed.
-- Realtime: self-hosted Socket.io/SSE, no Pusher.
-- Maps: OSM + Nominatim + Leaflet + OSRM, no Google/Mapbox billing.
-- Auth/notify: email + in-app + FCM free; SMS deferred (Termii/Twilio cost per SMS).
-- Payments: Paystack/Flutterwave test mode free + COD free.
-- DevOps: GitHub Free + Actions Free.
-Pay later only: SMS, live payment %, domain, VPS beyond free tier.
+# ADR — Locked stack (user-approved, no pay now unless noted)
+- Auth: Better Auth ALWAYS (all apps). Phone OTP via console in dev; email via ZeptoMail. No custom JWT hand-rolls for new code.
+- Database: LOCAL Postgres+PostGIS via Docker Compose (fooddb). No hosted DB until pilot.
+- Storage: Cloudflare R2 (S3-compatible) for restaurant/food images. Local dev via env creds; LocalStack deferred.
+- Payments: Paystack ONLY (test mode free; % only on live). No Flutterwave unless fallback needed. COD always available per restaurant.
+- Email: ZeptoMail for OTP/notify templates (free tier; domain verify at pilot).
+- Notify: in-app + ZeptoMail + FCM push free; SMS deferred (costs).
+- Maps: OSM + Nominatim + Leaflet + OSRM (free).
+- Realtime: self-hosted Socket.io/SSE.
+- Hosting: LOCAL DEVICE for now (Docker Compose + Next.js dev). No Vercel/Render deploy until pilot.
+Pay later only: SMS, live Paystack %, domain, R2 egress beyond free tier.

@@ -21,4 +21,18 @@ function ticket({ order_id, issue_type }) {
   tickets.push(t);
   return { ticket: t };
 }
-module.exports = { addReview, forRestaurant, addFav, getFav, ticket, tickets };
+function moderate(review_id, action, response) {
+  const r = reviews.find((x) => x.id === review_id);
+  if (!r) return { error: "not found" };
+  if (action === "respond") r.response = response || "";
+  else r.moderation = action === "approve" ? "approved" : action === "flag" ? "flagged" : r.moderation;
+  return { review: r };
+}
+function resolveTicket(id, resolution) {
+  const t = tickets.find((x) => x.id === id);
+  if (!t) return { error: "not found" };
+  t.status = "resolved"; t.resolution = resolution;
+  t.sla_hours = (Date.now() - new Date(t.at).getTime()) / 36e5;
+  return { ticket: t };
+}
+module.exports = { addReview, forRestaurant, addFav, getFav, ticket, tickets, moderate, resolveTicket, reviews };

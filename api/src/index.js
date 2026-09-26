@@ -192,6 +192,25 @@ http.createServer(async (req, res) => {
     }
     return json(res, 200, { ack: true });
   }
+  if (u.pathname.startsWith("/reviews/") && u.pathname.endsWith("/moderate") && req.method === "POST") {
+    const b = await body(req);
+    const r = engage.moderate(u.pathname.split("/")[2], b.action, b.response);
+    return r.error ? json(res, 404, r) : json(res, 200, r);
+  }
+  if (u.pathname.startsWith("/support/") && u.pathname.endsWith("/resolve") && req.method === "POST") {
+    const b = await body(req);
+    const r = engage.resolveTicket(u.pathname.split("/")[2], b.resolution);
+    return r.error ? json(res, 404, r) : json(res, 200, r);
+  }
+  if (u.pathname === "/admin/metrics") {
+    const list = orders.list();
+    const done = list.filter((o) => o.order_status === "delivered");
+    const cancelled = list.filter((o) => o.order_status === "cancelled");
+    const aov = list.length ? Math.round(list.reduce((s, o) => s + o.total_kobo, 0) / list.length) : 0;
+    const revs = engage.reviews.filter((r) => r.moderation === "approved");
+    const csat = revs.length ? (revs.reduce((s, r) => s + (r.restaurant_rating || 0), 0) / revs.length).toFixed(2) : null;
+    return json(res, 200, { orders: list.length, delivered: done.length, cancelled: cancelled.length, completion_rate: list.length ? +(done.length / list.length).toFixed(2) : null, aov_kobo: aov, csat_avg: csat, refunds: admin.refunds.length });
+  }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ app: "food-marketplace-api", phase: "5.1" }));

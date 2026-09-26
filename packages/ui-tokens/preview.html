@@ -2,45 +2,48 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Food Marketplace — Design System Preview (Bright)</title>
+<title>Food Marketplace — Design System (Calabash Cool)</title>
 <style>
-:root{--primary:#FF5A00;--primary-dark:#C43D00;--accent:#FFD600;--success:#00C853;--success-dark:#007A33;--warning:#FFAB00;--danger:#FF1744;--info:#00B0FF;--text:#0B0B0B;--muted:#3D3D3D;--bg:#FFFFFF;--surface:#FFF4E0}
+:root{--primary:#2D5A3D;--primary-dark:#1B3A28;--accent:#C8A86B;--clay:#8B5E3C;--success:#3E7C4F;--warning:#D9A441;--danger:#B3402A;--info:#5B8E9E;--text:#23282B;--muted:#5A6366;--bg:#FAF7F0;--surface:#EDE8DC}
 *{box-sizing:border-box}body{font-family:Inter,system-ui,sans-serif;color:var(--text);margin:0;background:var(--bg)}
-header{background:linear-gradient(135deg,var(--primary),#FF8A00);color:#000;padding:24px;border-bottom:6px solid var(--accent)}
+header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:24px;border-bottom:6px solid var(--accent)}
 .wrap{max-width:960px;margin:auto;padding:20px}
 h2{margin-top:36px;border-bottom:3px solid var(--accent);padding-bottom:6px}
 .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
-.swatch{border-radius:12px;overflow:hidden;border:2px solid #000}.swatch div{height:56px}.swatch p{margin:0;padding:8px;font-size:12px;font-weight:700;background:#fff}
-.btn{display:inline-block;border:2px solid #000;border-radius:12px;padding:12px 20px;font-size:16px;font-weight:800;min-height:44px;cursor:pointer;margin:4px}
-.btn-primary{background:var(--primary);color:#000}.btn-dark{background:var(--primary-dark);color:#fff;border-color:#000}.btn-accent{background:var(--accent);color:#000}.btn-outline{background:#fff;color:#000}
-.badge{display:inline-block;border:2px solid #000;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:800;margin:4px;color:#000}.open{background:var(--success)}.closed{background:#fff}.promo{background:var(--accent)}.danger{background:var(--danger);color:#fff;border-color:#000}.info{background:var(--info)}
+.swatch{border-radius:12px;overflow:hidden;border:1px solid #d8d2c4}.swatch div{height:56px}.swatch p{margin:0;padding:8px;font-size:12px;font-weight:600;background:#fff}
+.btn{display:inline-block;border:0;border-radius:12px;padding:12px 20px;font-size:16px;font-weight:700;min-height:44px;cursor:pointer;margin:4px}
+.btn-primary{background:var(--primary);color:#fff}.btn-dark{background:var(--primary-dark);color:#fff}.btn-accent{background:var(--accent);color:var(--text)}.btn-clay{background:var(--clay);color:#fff}.btn-outline{background:transparent;color:var(--primary-dark);border:2px solid var(--primary-dark)}
+.badge{display:inline-block;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:700;margin:4px}.open{background:var(--success);color:#fff}.closed{background:var(--muted);color:#fff}.promo{background:var(--accent);color:var(--text)}.clay{background:var(--clay);color:#fff}.info{background:var(--info);color:#fff}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
-.card{border:2px solid #000;border-radius:16px;overflow:hidden;background:#fff}.card img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--surface)}.card .body{padding:12px}.price{font-size:18px;font-weight:800}.muted{color:var(--muted);font-size:14px}
-.stars{color:#B26A00;font-weight:800}.timeline{border-left:4px solid var(--accent);margin:12px 0 12px 6px;padding-left:16px}.timeline div{margin:8px 0;font-weight:600}.dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--success);border:2px solid #000;margin-right:8px}
-input{border:2px solid #000;border-radius:12px;padding:12px;font-size:16px;min-height:44px;margin:4px;background:#fff}
-.cart{background:var(--surface);border:2px solid #000;border-radius:16px;padding:16px}.row{display:flex;justify-content:space-between;padding:4px 0;font-weight:600}.total{font-weight:800;font-size:20px;border-top:2px solid #000;margin-top:8px;padding-top:8px}
+.card{border:1px solid #d8d2c4;border-radius:16px;overflow:hidden;background:#fff}.card img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--surface)}.card .body{padding:12px}.price{font-size:18px;font-weight:800}.muted{color:var(--muted);font-size:14px}
+.stars{color:var(--clay);font-weight:800}.timeline{border-left:4px solid var(--accent);margin:12px 0 12px 6px;padding-left:16px}.timeline div{margin:8px 0}.dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--success);margin-right:8px}
+input{border:1px solid #c9c2b2;border-radius:12px;padding:12px;font-size:16px;min-height:44px;margin:4px;background:#fff}
+.cart{background:var(--surface);border:1px solid #d8d2c4;border-radius:16px;padding:16px}.row{display:flex;justify-content:space-between;padding:4px 0}.total{font-weight:800;font-size:20px;border-top:2px solid var(--accent);margin-top:8px;padding-top:8px}
 </style>
 </head>
 <body>
-<header><h1 style="margin:0">🍔 Food Marketplace — Bright System v0.2</h1><small><b>Very bright + sharp contrast: orange #FF5A00, yellow #FFD600, black borders/text on bright fills</b></small></header>
+<header><h1 style="margin:0">🍲 Food Marketplace — Calabash Cool v0.3</h1><small>Deep gourd green, dried-gourd tan, clay, stone grey — realistic, calm, natural</small></header>
 <div class="wrap">
-<h2>1. Colors (all new)</h2>
+<h2>1. Colors (calabash + grey)</h2>
 <div class="swatches">
-<div class="swatch"><div style="background:#FF5A00"></div><p>Primary #FF5A00</p></div>
-<div class="swatch"><div style="background:#C43D00"></div><p>PrimaryDark #C43D00</p></div>
-<div class="swatch"><div style="background:#FFD600"></div><p>Accent #FFD600</p></div>
-<div class="swatch"><div style="background:#00C853"></div><p>Success #00C853</p></div>
-<div class="swatch"><div style="background:#FFAB00"></div><p>Warning #FFAB00</p></div>
-<div class="swatch"><div style="background:#FF1744"></div><p>Danger #FF1744</p></div>
-<div class="swatch"><div style="background:#00B0FF"></div><p>Info #00B0FF</p></div>
-<div class="swatch"><div style="background:#0B0B0B"></div><p style="color:#fff">Text #0B0B0B</p></div>
+<div class="swatch"><div style="background:#2D5A3D"></div><p>Primary #2D5A3D</p></div>
+<div class="swatch"><div style="background:#1B3A28"></div><p>Dark #1B3A28</p></div>
+<div class="swatch"><div style="background:#C8A86B"></div><p>Accent #C8A86B</p></div>
+<div class="swatch"><div style="background:#8B5E3C"></div><p>Clay #8B5E3C</p></div>
+<div class="swatch"><div style="background:#3E7C4F"></div><p>Success #3E7C4F</p></div>
+<div class="swatch"><div style="background:#D9A441"></div><p>Warning #D9A441</p></div>
+<div class="swatch"><div style="background:#B3402A"></div><p>Danger #B3402A</p></div>
+<div class="swatch"><div style="background:#5B8E9E"></div><p>Info #5B8E9E</p></div>
+<div class="swatch"><div style="background:#23282B"></div><p style="color:#fff">Text #23282B</p></div>
+<div class="swatch"><div style="background:#EDE8DC"></div><p>Surface #EDE8DC</p></div>
 </div>
 <h2>2. Buttons & Badges</h2>
 <button class="btn btn-primary">Order Now</button>
 <button class="btn btn-dark">Add to Cart</button>
 <button class="btn btn-accent">Free Delivery</button>
-<button class="btn btn-outline">View Menu</button><br>
-<span class="badge open">Open</span><span class="badge closed">Closed</span><span class="badge promo">Promo</span><span class="badge danger">Hot</span><span class="badge info">New</span>
+<button class="btn btn-clay">View Menu</button>
+<button class="btn btn-outline">Track Order</button><br>
+<span class="badge open">Open</span><span class="badge closed">Closed</span><span class="badge promo">Promo</span><span class="badge clay">Popular</span><span class="badge info">New</span>
 <span class="stars">★★★★☆ 4.2 (180)</span>
 <h2>3. Cards</h2>
 <div class="cards">
@@ -50,7 +53,7 @@ input{border:2px solid #000;border-radius:12px;padding:12px;font-size:16px;min-h
 <h2>4. Cart</h2>
 <div class="cart"><div class="row"><span>Subtotal</span><span>₦7,000</span></div><div class="row"><span>Delivery</span><span>₦800</span></div><div class="row"><span>Service</span><span>₦350</span></div><div class="row"><span>Discount</span><span>−₦500</span></div><div class="row total"><span>Total</span><span>₦7,650</span></div></div>
 <h2>5. Tracking</h2>
-<div class="timeline"><div><span class="dot"></span>Received ✓</div><div><span class="dot"></span>Accepted ✓</div><div><span class="dot"></span>Preparing (now)</div><div><span class="dot" style="background:#fff"></span>Ready</div><div><span class="dot" style="background:#fff"></span>Picked Up</div><div><span class="dot" style="background:#fff"></span>On the Way</div><div><span class="dot" style="background:#fff"></span>Delivered</div></div>
+<div class="timeline"><div><span class="dot"></span>Received ✓</div><div><span class="dot"></span>Accepted ✓</div><div><span class="dot"></span>Preparing (now)</div><div><span class="dot" style="background:#c9c2b2"></span>Ready</div><div><span class="dot" style="background:#c9c2b2"></span>Picked Up</div><div><span class="dot" style="background:#c9c2b2"></span>On the Way</div><div><span class="dot" style="background:#c9c2b2"></span>Delivered</div></div>
 </div>
 </body>
 </html>

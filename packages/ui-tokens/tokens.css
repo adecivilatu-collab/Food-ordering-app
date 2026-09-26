@@ -1,20 +1,19 @@
-/* Phase 1 tokens — bright v0.2. Import in all apps. */
+/* Phase 1 tokens — calabash cool v0.3. Import in all apps. */
 :root {
-  --color-primary: #FF5A00;
-  --color-primary-dark: #C43D00;
-  --color-accent: #FFD600;
-  --color-success: #00C853;
-  --color-success-dark: #007A33;
-  --color-warning: #FFAB00;
-  --color-danger: #FF1744;
-  --color-info: #00B0FF;
-  --color-text: #0B0B0B;
-  --color-muted: #3D3D3D;
-  --color-bg: #FFFFFF;
-  --color-surface: #FFF4E0;
+  --color-primary: #2D5A3D;
+  --color-primary-dark: #1B3A28;
+  --color-accent: #C8A86B;
+  --color-clay: #8B5E3C;
+  --color-success: #3E7C4F;
+  --color-warning: #D9A441;
+  --color-danger: #B3402A;
+  --color-info: #5B8E9E;
+  --color-text: #23282B;
+  --color-muted: #5A6366;
+  --color-bg: #FAF7F0;
+  --color-surface: #EDE8DC;
   --font-family: Inter, system-ui, sans-serif;
   --fs-12: 12px; --fs-14: 14px; --fs-16: 16px; --fs-20: 20px; --fs-24: 24px; --fs-32: 32px;
   --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
-  --border-strong: 2px solid #0B0B0B;
   --touch-min: 44px;
 }

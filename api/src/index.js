@@ -6,6 +6,7 @@ const catalog = require("./modules/catalog");
 const cart = require("./modules/cart-orders/cart");
 const orders = require("./modules/cart-orders/orders");
 const status = require("./modules/delivery/status");
+const restaurant = require("./modules/catalog/restaurant");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
 
@@ -85,6 +86,25 @@ http.createServer(async (req, res) => {
     if (!o) return json(res, 404, { error: "not found" });
     const b = await body(req);
     return json(res, 200, status.assign(o, b.rider_id || "rider1"));
+  }
+  if (u.pathname === "/restaurant/menu" && req.method === "POST") {
+    const b = await body(req);
+    const r = restaurant.addItem(b);
+    return r.error ? json(res, 400, r) : json(res, 201, r);
+  }
+  if (u.pathname.startsWith("/restaurant/menu/") && req.method === "PATCH") {
+    const id = u.pathname.split("/")[3];
+    const b = await body(req);
+    const r = b.price_kobo !== undefined ? restaurant.setPrice(id, b.price_kobo) : restaurant.setAvailability(id, b.available);
+    return r.error ? json(res, 404, r) : json(res, 200, r);
+  }
+  if (u.pathname === "/restaurant/hours" && req.method === "PUT") {
+    const b = await body(req);
+    return json(res, 200, restaurant.setHours(b.restaurant_id, b.open_hours));
+  }
+  if (u.pathname === "/restaurant/promos" && req.method === "POST") {
+    const b = await body(req);
+    return json(res, 201, restaurant.createPromo(b));
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

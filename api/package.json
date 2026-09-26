@@ -1,1 +1,1 @@
-{"name": "api", "version": "0.1.0", "private": true, "scripts": {"dev": "node src/index.js", "start": "node src/index.js"}}
+{"name": "api", "version": "0.1.0", "private": true, "scripts": {"dev": "node src/index.js", "start": "node src/index.js", "test": "node --test tests/"}}

@@ -28,7 +28,16 @@ function body(req) {
 }
 
 http.createServer(async (req, res) => {
+  const t0 = Date.now();
   const u = new URL(req.url, "http://x");
+  res.on("finish", () => console.log(JSON.stringify({ m: req.method, p: u.pathname, s: res.statusCode, ms: Date.now() - t0 })));
+  const hits = ((globalThis.__rl = globalThis.__rl || new Map()));
+  if (u.pathname.startsWith("/auth/otp")) {
+    const k = "otp";
+    const arr = (hits.get(k) || []).filter((t) => Date.now() - t < 60000);
+    if (arr.length >= 10) return json(res, 429, { error: "too many OTP requests" });
+    arr.push(Date.now()); hits.set(k, arr);
+  }
   if (u.pathname === "/health") { res.writeHead(200); return res.end("ok"); }
   if (u.pathname === "/categories") return json(res, 200, { categories: catalog.categories });
   if (u.pathname === "/restaurants") {

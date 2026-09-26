@@ -8,6 +8,7 @@ const orders = require("./modules/cart-orders/orders");
 const status = require("./modules/delivery/status");
 const rider = require("./modules/delivery/rider");
 const admin = require("./modules/admin");
+const engage = require("./modules/engagement");
 const restaurant = require("./modules/catalog/restaurant");
 const menuData = require("./db/menu.json");
 const port = process.env.PORT || 4000;
@@ -135,6 +136,31 @@ http.createServer(async (req, res) => {
   if (u.pathname === "/admin/refunds" && req.method === "POST") {
     const b = await body(req);
     return json(res, 201, admin.refund(b));
+  }
+  if (u.pathname === "/reviews" && req.method === "POST") {
+    const b = await body(req);
+    const r = engage.addReview(orders.get(b.order_id), b);
+    return r.error ? json(res, 400, r) : json(res, 201, r);
+  }
+  if (u.pathname.startsWith("/r/") && u.pathname.endsWith("/reviews")) {
+    return json(res, 200, { reviews: engage.forRestaurant(u.pathname.split("/")[2]) });
+  }
+  if (u.pathname === "/favorites" && req.method === "POST") {
+    const b = await body(req);
+    return json(res, 201, engage.addFav(b.phone, b));
+  }
+  if (u.pathname === "/favorites") return json(res, 200, { favorites: engage.getFav(u.searchParams.get("phone") || "") });
+  if (u.pathname === "/reorder" && req.method === "POST") {
+    const b = await body(req);
+    const o = orders.get(b.order_id);
+    if (!o) return json(res, 404, { error: "order not found" });
+    cart.clear(b.session || "dev");
+    for (const l of o.items) cart.addLine(b.session || "dev", { item_id: l.item_id, qty: l.qty, options: l.options || {} });
+    return json(res, 200, { cart: cart.get(b.session || "dev") });
+  }
+  if (u.pathname === "/support" && req.method === "POST") {
+    const b = await body(req);
+    return json(res, 201, engage.ticket(b));
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

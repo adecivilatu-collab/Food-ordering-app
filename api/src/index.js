@@ -11,6 +11,7 @@ const admin = require("./modules/admin");
 const engage = require("./modules/engagement");
 const paystack = require("./modules/payments/paystack");
 const notify = require("./modules/notify");
+const supportChat = require("./modules/support-chat");
 let baHandler = null;
 async function betterAuthHandler(req, res) {
   if (!baHandler) {
@@ -236,6 +237,12 @@ http.createServer(async (req, res) => {
     const revs = engage.reviews.filter((r) => r.moderation === "approved");
     const csat = revs.length ? (revs.reduce((s, r) => s + (r.restaurant_rating || 0), 0) / revs.length).toFixed(2) : null;
     return json(res, 200, { orders: list.length, delivered: done.length, cancelled: cancelled.length, completion_rate: list.length ? +(done.length / list.length).toFixed(2) : null, aov_kobo: aov, csat_avg: csat, refunds: admin.refunds.length });
+  }
+  if (u.pathname === "/support/chat" && req.method === "POST") {
+    const b = await body(req);
+    const order = b.order_id ? orders.get(b.order_id) : null;
+    const answer = await supportChat.chat({ question: b.question || "", order }, catalog.list());
+    return json(res, 200, { answer });
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });

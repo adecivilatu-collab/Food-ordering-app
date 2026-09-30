@@ -202,7 +202,8 @@ http.createServer(async (req, res) => {
     const b = await body(req);
     const o = orders.get(b.order_id);
     if (!o) return json(res, 404, { error: "order not found" });
-    return json(res, 200, paystack.initialize(o));
+    const init = await paystack.initialize(o, b.email);
+    return init.error ? json(res, 502, init) : json(res, 200, init);
   }
   if (u.pathname === "/payments/webhook" && req.method === "POST") {
     let raw = "";

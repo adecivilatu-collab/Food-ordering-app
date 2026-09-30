@@ -23,7 +23,7 @@ async function initialize(order, email) {
     const res = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email || "customer@food.local", amount: order.total_kobo, reference: "PSK-" + Date.now(), metadata: { order_id: order.id } }),
+      body: JSON.stringify({ email: email && email.includes("@") ? email : "guest@foodmarket.com", amount: order.total_kobo, reference: "PSK-" + Date.now(), metadata: { order_id: order.id } }),
     });
     const data = await res.json();
     if (data.status) {

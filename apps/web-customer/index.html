@@ -10,7 +10,8 @@ header{background:var(--color-primary-dark);color:#fff;padding:16px;position:sti
 header input{width:100%;max-width:480px;border:0;border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16)}
 .wrap{max-width:960px;margin:auto;padding:16px}
 .cats{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
-.cat{background:var(--color-surface);border:1px solid var(--color-accent);border-radius:999px;padding:8px 14px;white-space:nowrap;font-size:var(--fs-14)}
+.cat{background:var(--color-surface);border:1px solid var(--color-accent);border-radius:999px;padding:8px 14px;white-space:nowrap;font-size:var(--fs-14);cursor:pointer}
+.cat.active{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .card{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);overflow:hidden}
 .card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--color-surface)}
@@ -30,20 +31,39 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 </div>
 <script>
 const API = "http://localhost:4000";
-async function load(f = "") {
-  try {
-    const cats = await (await fetch(API + "/categories")).json();
-    document.getElementById("cats").innerHTML = cats.categories.map((c) => `<span class="cat">${c}</span>`).join("");
-    const r = await (await fetch(API + "/restaurants" + (f ? "?cuisine=" + encodeURIComponent(f) : ""))).json();
-    document.getElementById("list").innerHTML = r.restaurants.map((x) => `
+let ALL = [], ACTIVE_CAT = "";
+function card(x) {
+  return `
       <div class="card"><img alt="${x.name}">
         <div class="b"><b>${x.name}</b><div class="muted">${x.cuisines.join(" • ")} • ${x.eta_min} min • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
         <span class="badge ${x.open ? "open" : "closed"}">${x.open ? "Open" : "Closed"}</span>
         ${x.promo ? `<span class="badge promo">${x.promo}</span>` : ""} ⭐ ${x.rating} (${x.reviews})
-        <p><a href="restaurant.html?id=${x.id}"><button>View Menu</button></a></p></div></div>`).join("") || "<p>No matches.</p>";
+        <p><a href="restaurant.html?id=${x.id}"><button>View Menu</button></a></p></div></div>`;
+}
+function render() {
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const list = ALL.filter((x) => {
+    if (ACTIVE_CAT && !x.cuisines.includes(ACTIVE_CAT)) return false;
+    if (q && !(x.name.toLowerCase().includes(q) || x.cuisines.join(" ").toLowerCase().includes(q))) return false;
+    return true;
+  });
+  document.querySelectorAll(".cat").forEach((el) => el.classList.toggle("active", el.dataset.c === ACTIVE_CAT));
+  document.getElementById("list").innerHTML = list.map(card).join("") || "<p>No matches — try another word or category.</p>";
+}
+function pick(c) {
+  ACTIVE_CAT = ACTIVE_CAT === c ? "" : c;
+  render();
+}
+async function load() {
+  try {
+    const cats = await (await fetch(API + "/categories")).json();
+    document.getElementById("cats").innerHTML = cats.categories.map((c) => `<button class="cat" data-c="${c}" onclick="pick('${c}')">${c}</button>`).join("");
+    const r = await (await fetch(API + "/restaurants")).json();
+    ALL = r.restaurants;
+    render();
   } catch (e) { document.getElementById("list").innerHTML = "<p>API offline — start it first.</p>"; }
 }
-document.getElementById("q").addEventListener("change", (e) => load(e.target.value));
+document.getElementById("q").addEventListener("input", render);
 load();
 </script>
 </body>

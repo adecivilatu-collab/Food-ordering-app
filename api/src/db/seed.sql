@@ -3,5 +3,6 @@ INSERT INTO restaurants (name, cuisines, rating_avg, status, delivery_fee_kobo, 
 VALUES
  ('Mama Put Kitchen', ARRAY['Nigerian','Rice'], 4.2, 'approved', 80000, 100000, true, 12.5),
  ('Chicken Republic Lite', ARRAY['Fast Food','Chicken'], 4.5, 'approved', 50000, 50000, true, 12.5),
- ('Shawarma Hub', ARRAY['Shawarma','Fast Food'], 4.0, 'pending', 100000, 150000, false, 15.0)
+ ('Shawarma Hub', ARRAY['Shawarma','Fast Food'], 4.0, 'pending', 100000, 150000, false, 15.0),
+ ('Golfer''s Hub', ARRAY['Burgers','Shawarma','Fast Food'], 4.6, 'approved', 60000, 50000, true, 12.5)
 ON CONFLICT DO NOTHING;

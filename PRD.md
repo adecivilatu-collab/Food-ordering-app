@@ -1,4 +1,4 @@
-# PRD — Nigerian Multi-Restaurant Food Ordering Marketplace
+# PRD — Foodiebator (Nigerian Multi-Restaurant Food Ordering Marketplace)
 
 ## 1. Product Summary
 Multi-restaurant food ordering and delivery marketplace for Nigeria (multi-city scalable).

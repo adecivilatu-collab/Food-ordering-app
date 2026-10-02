@@ -247,5 +247,5 @@ http.createServer(async (req, res) => {
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ app: "food-marketplace-api", phase: "5.1" }));
+  res.end(JSON.stringify({ app: "foodiebator-api", phase: "5.1" }));
 }).listen(port, () => console.log("api on " + port));

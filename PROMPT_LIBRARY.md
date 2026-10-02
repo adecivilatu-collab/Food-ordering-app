@@ -1,4 +1,4 @@
-# Prompt Library — Food Ordering App
+# Prompt Library — Foodiebator
 Every prompt used to create this Nigerian multi-restaurant food marketplace, in order.
 
 ## Setup & Context

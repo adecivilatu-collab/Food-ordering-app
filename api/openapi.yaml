@@ -1,5 +1,5 @@
 openapi: 3.0.3
-info: {title: Food Marketplace API, version: 0.1.0}
+info: {title: Foodiebator API, version: 0.1.0}
 paths:
   /health: {get: {responses: {'200': {description: ok}}}}
   /restaurants:

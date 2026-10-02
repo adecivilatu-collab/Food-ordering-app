@@ -1,4 +1,4 @@
-# Nigerian Multi-Restaurant Food Ordering Marketplace
+# Foodiebator — Nigerian Multi-Restaurant Food Ordering Marketplace
 
 ## 1. Overview
 

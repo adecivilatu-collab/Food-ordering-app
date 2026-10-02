@@ -1,4 +1,4 @@
-# Implementation Plan v2 — Nigerian Multi-Restaurant Food Marketplace
+# Implementation Plan v2 — Foodiebator (Nigerian Multi-Restaurant Food Marketplace)
 Source: PRD v1 (36 sections), README.md, git: Food-ordering-app (main: 10da595 + 2a3ce24)
 Core flow: Location → Restaurant → Food → Cart → Payment → Delivery → Review → Reorder
 Updated: 2026-09-25

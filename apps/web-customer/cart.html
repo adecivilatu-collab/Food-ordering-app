@@ -46,7 +46,7 @@ async function checkout() {
     const init = await (await fetch(API + "/payments/initialize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: r.order.id, email: document.getElementById("email").value || "" }) })).json();
     if (init.authorization_url) extra = `<br><a href="${init.authorization_url}" target="_blank" style="color:#fff;font-weight:800">Pay now on Paystack →</a>`;
   }
-  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b><br>Total ₦${(r.order.total_kobo / 100).toLocaleString()} • ${r.order.payment_method.toUpperCase()} • Status: ${r.order.order_status}${extra}<br>Track: GET /track/${r.order.id}</div>`;
+  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b><br>Total ₦${(r.order.total_kobo / 100).toLocaleString()} • ${r.order.payment_method.toUpperCase()} • Status: ${r.order.order_status}${extra}<br><a href="track.html?id=${r.order.id}" style="color:#fff;font-weight:800">Track your order →</a></div>`;
   load();
 }
 load();

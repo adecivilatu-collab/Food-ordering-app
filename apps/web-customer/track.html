@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track Order — Foodiebator</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px}
+.wrap{max-width:640px;margin:auto;padding:16px}
+.rider{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);padding:14px;display:flex;gap:12px;align-items:center;margin:12px 0}
+.avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--color-primary),var(--color-accent));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff}
+.steps{margin:16px 0 16px 8px;border-left:4px solid var(--color-accent);padding-left:18px}
+.step{margin:12px 0;color:var(--color-muted)}
+.step.done{color:var(--color-text);font-weight:700}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#ccc;margin-right:8px}
+.done .dot{background:var(--color-success)}
+.eta{background:var(--color-surface);border-radius:var(--radius-lg);padding:14px;text-align:center;font-size:var(--fs-20);font-weight:800}
+input{width:100%;box-sizing:border-box;border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);margin:6px 0}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700;width:100%}
+</style>
+</head>
+<body>
+<header><a href="index.html" style="color:var(--color-accent)">← Home</a><h2 style="margin:4px 0">Track your order</h2></header>
+<div class="wrap">
+<input id="oid" placeholder="Order id (e.g. o1001) — auto-filled after checkout">
+<button onclick="track()">Track</button>
+<div id="out"><p style="color:var(--color-muted)">Enter your order id to watch it travel.</p></div>
+</div>
+<script>
+const API = "http://localhost:4000";
+const STEPS = ["received", "accepted", "preparing", "ready", "picked_up", "on_the_way", "delivered"];
+const LABEL = { received: "Order received", accepted: "Restaurant accepted", preparing: "Preparing your food", ready: "Ready for pickup", picked_up: "Rider picked up", on_the_way: "On the way", delivered: "Delivered — enjoy!" };
+async function track() {
+  const id = document.getElementById("oid").value.trim();
+  if (!id) return;
+  const t = await (await fetch(API + "/track/" + id)).json();
+  const idx = STEPS.indexOf(t.status);
+  const initial = (t.rider_id || "R").replace("rider", "R").charAt(0).toUpperCase();
+  document.getElementById("out").innerHTML = `
+    <div class="eta">${t.order_no} • ~${t.eta_min} min</div>
+    <div class="rider"><div class="avatar">${initial}</div><div><b>${t.rider_id ? "Rider " + t.rider_id : "Assigning your rider..."}</b><div style="color:var(--color-muted);font-size:14px">${t.rider_id ? "Call • Message" : "Sit tight"}</div></div></div>
+    <div class="steps">${STEPS.map((s, i) => `<div class="step${i <= idx ? " done" : ""}"><span class="dot"></span>${LABEL[s]}</div>`).join("")}</div>`;
+}
+const q = new URLSearchParams(location.search).get("id");
+if (q) { document.getElementById("oid").value = q; track(); }
+setInterval(() => { if (document.getElementById("oid").value) track(); }, 15000);
+</script>
+</body>
+</html>

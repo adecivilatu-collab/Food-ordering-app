@@ -19,25 +19,52 @@ header input{width:100%;max-width:480px;border:0;border-radius:var(--radius-md);
 .muted{color:var(--color-muted);font-size:var(--fs-14)}
 .badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:var(--fs-12);font-weight:700}
 .open{background:var(--color-success);color:#fff}.closed{background:var(--color-muted);color:#fff}.promo{background:var(--color-accent)}
+.tag{position:absolute;top:8px;left:8px;background:var(--color-danger);color:#fff;border-radius:8px;padding:2px 8px;font-size:var(--fs-12);font-weight:800}
+.eta{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;border-radius:8px;padding:2px 8px;font-size:var(--fs-12)}
+.pic{position:relative}.pic img{display:block}
+.carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 12px}
+.slide{min-width:82%;scroll-snap-align:start;border-radius:var(--radius-lg);padding:20px;color:#fff;position:relative;overflow:hidden}
+.slide h3{margin:0 0 4px}.slide p{margin:0 0 10px;opacity:.9}
+.slide button{width:auto;background:#fff;color:var(--color-primary-dark)}
+.s1{background:linear-gradient(120deg,var(--color-primary),#7a2f10)}
+.s2{background:linear-gradient(120deg,var(--color-clay,#8B5E3C),#3d2a18)}
+.s3{background:linear-gradient(120deg,#1B3A28,#2D5A3D)}
+nav.tabs{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--color-accent);display:flex;justify-content:space-around;padding:8px 0;margin-top:16px}
+nav.tabs a{color:var(--color-muted);font-size:var(--fs-12);text-decoration:none;text-align:center}
+nav.tabs a.on{color:var(--color-primary);font-weight:800}
 button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700;width:100%}
 </style>
 </head>
 <body>
 <header><b>🍲 Foodiebator — Lagos</b><br><input id="q" placeholder="Search jollof, pizza, shawarma..."></header>
 <div class="wrap">
+<div class="carousel" id="promo">
+<div class="slide s1"><h3>Free delivery weekend</h3><p>Mama Put Kitchen • Lagos</p><button>Order now</button></div>
+<div class="slide s2"><h3>20% off Golfer's Hub</h3><p>Burgers & shawarma • 22 min</p><button>See deals</button></div>
+<div class="slide s3"><h3>New: Golfer's Hub</h3><p>⭐ 4.6 (210) • Try the Classic Burger</p><button>Explore</button></div>
+</div>
 <div class="cats" id="cats"></div>
 <h2>Nearby Restaurants</h2>
 <div class="grid" id="list"><p class="muted">Loading... (start API: npm run dev --workspace api)</p></div>
 </div>
+<nav class="tabs"><a class="on" href="index.html">🏠<br>Home</a><a href="index.html">🔍<br>Search</a><a href="cart.html">🛒<br>Cart</a><a href="cart.html">👤<br>Account</a></nav>
 <script>
 const API = "http://localhost:4000";
 let ALL = [], ACTIVE_CAT = "";
+const PHOTOS = {
+  r1: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=640&q=60",
+  r2: "https://images.unsplash.com/photo-1562967914-608f82629710?w=640&q=60",
+  r3: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=640&q=60",
+  r4: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=640&q=60",
+};
 function card(x) {
+  const photo = PHOTOS[x.id] || PHOTOS.r1;
   return `
-      <div class="card"><img alt="${x.name}">
-        <div class="b"><b>${x.name}</b><div class="muted">${x.cuisines.join(" • ")} • ${x.eta_min} min • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
+      <div class="card"><div class="pic"><img src="${photo}" alt="${x.name}" loading="lazy" onerror="this.remove()">
+        ${x.promo ? `<span class="tag">${x.promo}</span>` : ""}<span class="eta">${x.eta_min} min</span></div>
+        <div class="b"><b>${x.name}</b><div class="muted">${x.cuisines.join(" • ")} • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
         <span class="badge ${x.open ? "open" : "closed"}">${x.open ? "Open" : "Closed"}</span>
-        ${x.promo ? `<span class="badge promo">${x.promo}</span>` : ""} ⭐ ${x.rating} (${x.reviews})
+        ⭐ ${x.rating} (${x.reviews})
         <p><a href="restaurant.html?id=${x.id}"><button>View Menu</button></a></p></div></div>`;
 }
 function render() {
@@ -75,6 +102,12 @@ async function load() {
 }
 document.getElementById("q").addEventListener("input", render);
 load();
+setInterval(() => {
+  const c = document.getElementById("promo");
+  if (!c) return;
+  const next = c.scrollLeft + c.clientWidth * 0.85 >= c.scrollWidth ? 0 : c.scrollLeft + c.clientWidth * 0.85;
+  c.scrollTo({ left: next, behavior: "smooth" });
+}, 4000);
 </script>
 </body>
 </html>

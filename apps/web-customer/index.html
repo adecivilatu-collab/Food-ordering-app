@@ -12,6 +12,12 @@ header input{width:100%;max-width:480px;border:0;border-radius:var(--radius-md);
 .cats{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
 .cat{background:var(--color-surface);border:1px solid var(--color-accent);border-radius:999px;padding:8px 14px;white-space:nowrap;font-size:var(--fs-14);cursor:pointer}
 .cat.active{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
+.icons{display:flex;gap:14px;overflow-x:auto;padding:12px 2px}
+.icon{background:none;border:0;width:auto;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;min-width:68px}
+.icon img{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--color-accent);background:linear-gradient(135deg,var(--color-primary),var(--color-accent))}
+.icon.active img{border-color:var(--color-primary);box-shadow:0 0 0 3px var(--color-accent)}
+.icon span{font-size:var(--fs-12);color:var(--color-text);white-space:nowrap}
+.icon.active span{font-weight:800}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .card{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);overflow:hidden}
 .card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--color-surface)}
@@ -43,6 +49,7 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 <div class="slide s2"><h3>20% off Golfer's Hub</h3><p>Burgers & shawarma • 22 min</p><button>See deals</button></div>
 <div class="slide s3"><h3>New: Golfer's Hub</h3><p>⭐ 4.6 (210) • Try the Classic Burger</p><button>Explore</button></div>
 </div>
+<div class="icons" id="icons"></div>
 <div class="cats" id="cats"></div>
 <h2>Nearby Restaurants</h2>
 <div class="grid" id="list"><p class="muted">Loading... (start API: npm run dev --workspace api)</p></div>
@@ -57,6 +64,26 @@ const PHOTOS = {
   r3: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=640&q=60",
   r4: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=640&q=60",
 };
+const ICONS = {
+  Nigerian: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=160&q=60",
+  African: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=160&q=60",
+  "Fast Food": "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=160&q=60",
+  Pizza: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=160&q=60",
+  Burgers: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=160&q=60",
+  Chicken: "https://images.unsplash.com/photo-1562967914-608f82629710?w=160&q=60",
+  Rice: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=160&q=60",
+  Shawarma: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=160&q=60",
+  Chinese: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=160&q=60",
+  Bakery: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=160&q=60",
+  Desserts: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=160&q=60",
+  Drinks: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=160&q=60",
+  Healthy: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=160&q=60",
+};
+const FALLBACK_ICON = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=160&q=60";
+function renderCats(list) {
+  document.getElementById("icons").innerHTML = list.map((c) => `<button class="icon${ACTIVE_CAT === c ? " active" : ""}" onclick="pick('${c}')"><img src="${ICONS[c] || FALLBACK_ICON}" alt="${c}" loading="lazy" onerror="this.remove()"><span>${c}</span></button>`).join("");
+  document.getElementById("cats").innerHTML = list.map((c) => `<button class="cat" data-c="${c}" onclick="pick('${c}')">${c}</button>`).join("");
+}
 function card(x) {
   const photo = PHOTOS[x.id] || PHOTOS.r1;
   return `
@@ -75,6 +102,7 @@ function render() {
     return true;
   });
   document.querySelectorAll(".cat").forEach((el) => el.classList.toggle("active", el.dataset.c === ACTIVE_CAT));
+  document.querySelectorAll(".icon").forEach((el) => el.classList.toggle("active", el.querySelector("span").textContent === ACTIVE_CAT));
   document.getElementById("list").innerHTML = list.map(card).join("") || "<p>No matches — try another word or category.</p>";
 }
 function pick(c) {
@@ -85,12 +113,13 @@ async function load() {
   let demo = false;
   try {
     const cats = await (await fetch(API + "/categories")).json();
-    document.getElementById("cats").innerHTML = cats.categories.map((c) => `<button class="cat" data-c="${c}" onclick="pick('${c}')">${c}</button>`).join("");
+    renderCats(cats.categories);
     const r = await (await fetch(API + "/restaurants")).json();
     ALL = r.restaurants;
   } catch (e) {
     demo = true;
-    document.getElementById("cats").innerHTML = ["Nigerian", "Burgers", "Shawarma", "Chicken", "Rice", "Fast Food"].map((c) => `<button class="cat" data-c="${c}" onclick="pick('${c}')">${c}</button>`).join("");
+    const demoCats = ["Nigerian", "Burgers", "Shawarma", "Chicken", "Rice", "Fast Food"];
+    renderCats(demoCats);
     ALL = [
       { id: "r1", name: "Mama Put Kitchen", cuisines: ["Nigerian", "Rice"], rating: 4.2, reviews: 180, eta_min: 25, fee_kobo: 80000, open: true, promo: "Free Delivery" },
       { id: "r2", name: "Chicken Republic Lite", cuisines: ["Fast Food", "Chicken"], rating: 4.5, reviews: 320, eta_min: 20, fee_kobo: 50000, open: true },

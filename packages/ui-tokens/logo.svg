@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="56" fill="#1B3A28"/>
+  <path d="M48 128c0 44 32 72 80 72s80-28 80-72H48z" fill="#2D5A3D"/>
+  <path d="M48 128c20-10 44-14 80-14s60 4 80 14" fill="none" stroke="#C8A86B" stroke-width="10" stroke-linecap="round"/>
+  <path d="M108 84c-6-10 4-14 0-24M128 84c-6-10 4-14 0-24M148 84c-6-10 4-14 0-24" fill="none" stroke="#FFD600" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="196" cy="70" r="12" fill="#FF5A00"/>
+  <text x="128" y="222" font-family="Arial,sans-serif" font-size="30" font-weight="800" fill="#FAF7F0" text-anchor="middle">foodiebator</text>
+</svg>

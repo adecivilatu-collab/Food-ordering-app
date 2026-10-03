@@ -90,7 +90,7 @@ function card(x) {
   return `
       <div class="card${x.open ? "" : " shut"}"><div class="pic"><img src="${photo}" alt="${x.name}" loading="lazy" onerror="this.remove()">
         ${x.discount_pct ? `<span class="tag">-${x.discount_pct}%</span>` : x.promo ? `<span class="tag" style="background:var(--color-accent);color:var(--color-text)">${x.promo}</span>` : ""}<span class="eta">${x.eta_min} min</span></div>
-        <div class="b"><b>${x.name}</b><div class="muted">${x.cuisines.join(" • ")} • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
+        <div class="b"><b>${x.name}</b><div class="muted">📍 ${x.area || "Lagos"} • ${x.cuisines.join(" • ")} • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
         <span class="badge ${x.open ? "open" : "closed"}">${x.open ? "Open" : "Closed"}</span>
         ⭐ ${x.rating} (${x.reviews})
         <p><a href="restaurant.html?id=${x.id}"><button>View Menu</button></a></p></div></div>`;

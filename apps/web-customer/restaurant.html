@@ -35,7 +35,7 @@ if (!SESSION) { fetch(API + "/guest/session").then((r) => r.json()).then((j) => 
 async function load() {
   const r = await (await fetch(API + "/r/" + id)).json();
   document.getElementById("name").textContent = r.name;
-  document.getElementById("info").textContent = `${r.cuisines.join(" • ")} • ⭐ ${r.rating} (${r.reviews}) • ${r.eta_min} min`;
+  document.getElementById("info").textContent = `📍 ${r.area || "Lagos"} • ${r.cuisines.join(" • ")} • ⭐ ${r.rating} (${r.reviews}) • ${r.eta_min} min`;
   const m = await (await fetch(API + "/r/" + id + "/menu")).json();
   document.getElementById("menu").innerHTML = m.menu.map((f) => `
     <div class="item"><div><b>${f.name}</b><div class="price">₦${(f.price_kobo / 100).toLocaleString()}</div>

@@ -26,6 +26,8 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 <input id="email" placeholder="Email (for card payment receipt)" type="email">
 <input id="addr" placeholder="Delivery address / label">
 <select id="pay"><option value="card">Card (Paystack test)</option><option value="transfer">Bank Transfer</option><option value="ussd">USSD</option><option value="wallet">Wallet</option><option value="cod">Cash on Delivery</option></select>
+<label style="font-size:14px;color:var(--color-muted)">Schedule for later (optional — offices love this)</label>
+<input id="sched" type="datetime-local">
 <button onclick="checkout()">Confirm Order</button>
 <div id="done"></div>
 </div>
@@ -40,13 +42,15 @@ async function load() {
     `<div class="fees"><div><span>Subtotal</span><span>₦${((c.subtotal_kobo || 0) / 100).toLocaleString()}</span></div><div><span>Delivery</span><span>₦${c.lines.length ? (fee / 100).toLocaleString() : 0}</span></div><div><span>Service 5%</span><span>₦${c.lines.length ? (service / 100).toLocaleString() : 0}</span></div><div class="total"><span>Total</span><span>₦${(total / 100).toLocaleString()}</span></div></div>`;
 }
 async function checkout() {
-  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value, email: document.getElementById("email").value || "" }, payment_method: document.getElementById("pay").value }) })).json();
+  const schedVal = document.getElementById("sched").value;
+  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value, email: document.getElementById("email").value || "" }, payment_method: document.getElementById("pay").value, scheduled_for: schedVal ? new Date(schedVal).toISOString() : undefined }) })).json();
+  if (r.error) { document.getElementById("done").innerHTML = `<div class="ok" style="background:var(--color-danger)">${r.error}</div>`; return; }
   let extra = "";
   if (r.order.payment_method !== "cod") {
     const init = await (await fetch(API + "/payments/initialize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: r.order.id, email: document.getElementById("email").value || "" }) })).json();
     if (init.authorization_url) extra = `<br><a href="${init.authorization_url}" target="_blank" style="color:#fff;font-weight:800">Pay now on Paystack →</a>`;
   }
-  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b><br>Total ₦${(r.order.total_kobo / 100).toLocaleString()} • ${r.order.payment_method.toUpperCase()} • Status: ${r.order.order_status}${extra}<br><a href="track.html?id=${r.order.id}" style="color:#fff;font-weight:800">Track your order →</a></div>`;
+  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b>${r.order.scheduled_for ? `<br>🕐 Scheduled for ${new Date(r.order.scheduled_for).toLocaleString()}` : ""}<br>Total ₦${(r.order.total_kobo / 100).toLocaleString()} • ${r.order.payment_method.toUpperCase()} • Status: ${r.order.order_status}${extra}<br><a href="track.html?id=${r.order.id}" style="color:#fff;font-weight:800">Track your order →</a></div>`;
   load();
 }
 load();

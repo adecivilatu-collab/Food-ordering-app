@@ -39,6 +39,7 @@ async function track() {
   const initial = (t.rider_id || "R").replace("rider", "R").charAt(0).toUpperCase();
   document.getElementById("out").innerHTML = `
     <div class="eta">${t.order_no} • ~${t.eta_min} min</div>
+    ${t.scheduled_for ? `<p>🕐 Scheduled for ${new Date(t.scheduled_for).toLocaleString()}</p>` : ""}
     <div class="rider"><div class="avatar">${initial}</div><div><b>${t.rider_id ? "Rider " + t.rider_id : "Assigning your rider..."}</b><div style="color:var(--color-muted);font-size:14px">${t.rider_id ? "Call • Message" : "Sit tight"}</div></div></div>
     <div class="steps">${STEPS.map((s, i) => `<div class="step${i <= idx ? " done" : ""}"><span class="dot"></span>${LABEL[s]}</div>`).join("")}</div>`;
 }

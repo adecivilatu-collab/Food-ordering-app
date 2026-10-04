@@ -22,12 +22,19 @@ async function persist(order) {
     } catch {}
   }
 }
-async function checkout({ session, address, contact, payment_method, idempotencyKey, restaurant }) {
+async function checkout({ session, address, contact, payment_method, idempotencyKey, restaurant, scheduled_for }) {
   if (idempotencyKey && seenKeys.has(idempotencyKey)) {
     return { order: seenKeys.get(idempotencyKey), duplicate: true };
   }
   const c = await cart.get(session);
   if (!c.lines.length) return { error: "empty cart" };
+  let scheduled = null;
+  if (scheduled_for) {
+    const t = new Date(scheduled_for).getTime();
+    if (isNaN(t) || t <= Date.now()) return { error: "scheduled time must be in the future" };
+    if (t - Date.now() > 7 * 24 * 3600 * 1000) return { error: "schedule at most 7 days ahead" };
+    scheduled = new Date(t).toISOString();
+  }
   const p = price(c, restaurant);
   const total = p.subtotal_kobo + p.fee_kobo + p.service_kobo - p.discount_kobo;
   const order = {
@@ -38,6 +45,7 @@ async function checkout({ session, address, contact, payment_method, idempotency
     address, contact, payment_method: payment_method || "card",
     payment_status: payment_method === "cod" ? "cod_pending" : "pending",
     order_status: "received",
+    scheduled_for: scheduled,
     timeline: [{ status: "received", at: new Date().toISOString() }],
     created_at: new Date().toISOString(),
   };

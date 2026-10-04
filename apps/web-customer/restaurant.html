@@ -26,6 +26,11 @@ select,input{border:1px solid var(--color-accent);border-radius:var(--radius-md)
 <div class="wrap"><div id="menu"><p class="muted">Loading menu...</p></div></div>
 <div id="bar"><span id="count">Cart: 0 items</span><span><a href="cart.html">Full cart →</a> <button onclick="sheet(true)" style="width:auto;margin-left:8px">View 🛒</button></span></div>
 <div id="scrim" onclick="sheet(false)"></div>
+<div id="switchprompt" style="display:none;position:fixed;left:12px;right:12px;bottom:140px;background:#fff;border:2px solid var(--color-accent);border-radius:16px;padding:16px;z-index:30;box-shadow:0 8px 28px rgba(0,0,0,.3)">
+<b>Start a new cart here?</b><p class="muted" id="switchtext" style="margin:6px 0"></p>
+<button onclick="doSwitch()" style="width:auto">Switch (items saved)</button>
+<button onclick="hideSwitch()" style="width:auto;background:var(--color-muted)">Keep old cart</button>
+</div>
 <div id="sheet"><div class="grab"></div><h3 style="margin-top:0">Your cart</h3><div id="lines"></div><button onclick="location='cart.html'">Checkout →</button> <button onclick="sheet(false)" style="background:var(--color-muted)">Close</button></div>
 <script>
 const API = "http://localhost:4000";
@@ -43,12 +48,27 @@ async function load() {
     <button onclick="add('${f.id}')">Add +</button></div>`).join("");
   refresh();
 }
+let PENDING_ADD = null;
 async function add(item_id) {
   const options = {};
   document.querySelectorAll(`select[data-f="${item_id}"]`).forEach((s) => (options[s.dataset.t] = s.value.split(" (+")[0]));
-  await fetch(API + "/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, item_id, qty: 1, options }) });
+  const r = await (await fetch(API + "/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, item_id, qty: 1, options }) })).json();
+  if (r.error && r.cart) {
+    PENDING_ADD = { item_id, options };
+    const n = r.cart.lines.reduce((s, l) => s + l.qty, 0);
+    document.getElementById("switchtext").textContent = `Your cart has ${n} item(s) from another restaurant — kept safe. Switch to order here?`;
+    document.getElementById("switchprompt").style.display = "block";
+    return;
+  }
   refresh();
 }
+async function doSwitch() {
+  await fetch(API + "/cart/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION }) });
+  document.getElementById("switchprompt").style.display = "none";
+  if (PENDING_ADD) { const p = PENDING_ADD; PENDING_ADD = null; add(p.item_id); }
+  else refresh();
+}
+function hideSwitch() { document.getElementById("switchprompt").style.display = "none"; PENDING_ADD = null; }
 async function refresh() {
   if (!SESSION) return;
   const c = await (await fetch(API + "/cart?session=" + SESSION)).json();

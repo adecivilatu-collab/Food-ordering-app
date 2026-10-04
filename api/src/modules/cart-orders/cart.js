@@ -56,4 +56,50 @@ async function clear(session) {
   if (pool) { try { await pool.query("DELETE FROM app_carts WHERE session_key = $1", [session]); } catch {} }
   return { cleared: true };
 }
-module.exports = { get, addLine, clear, findItem };
+async function savedCarts(session) {
+  const pool = db();
+  if (pool) {
+    try {
+      const { rows } = await pool.query("SELECT data FROM app_carts WHERE session_key LIKE $1", [session + ":saved:%"]);
+      return rows.map((r) => r.data);
+    } catch {}
+  }
+  return [...mem.entries()].filter(([k]) => k.startsWith(session + ":saved:")).map(([, v]) => v);
+}
+async function switchCart(session) {
+  // Stash active cart, start fresh. Returns stashed summary.
+  const active = await get(session);
+  if (!active.lines.length) return { switched: false, reason: "active cart empty" };
+  const key = `${session}:saved:${active.restaurant_id}`;
+  mem.set(key, active);
+  const pool = db();
+  if (pool) {
+    try {
+      await pool.query(
+        "INSERT INTO app_carts(session_key, data, updated_at) VALUES($1, $2, now()) ON CONFLICT(session_key) DO UPDATE SET data = $2, updated_at = now()",
+        [key, JSON.stringify(active)]
+      );
+      await pool.query("DELETE FROM app_carts WHERE session_key = $1", [session]);
+    } catch {}
+  }
+  mem.delete(session);
+  return { switched: true, stashed: { restaurant_id: active.restaurant_id, items: active.lines.length, subtotal_kobo: active.subtotal_kobo } };
+}
+async function restoreCart(session, restaurant_id) {
+  const key = `${session}:saved:${restaurant_id}`;
+  let stash = mem.get(key) || null;
+  const pool = db();
+  if (!stash && pool) {
+    try {
+      const { rows } = await pool.query("SELECT data FROM app_carts WHERE session_key = $1", [key]);
+      if (rows[0]) stash = rows[0].data;
+    } catch {}
+  }
+  if (!stash) return { error: "no saved cart for this restaurant" };
+  const active = await get(session);
+  if (active.lines.length) await switchCart(session);
+  else { mem.delete(session); if (pool) { try { await pool.query("DELETE FROM app_carts WHERE session_key = $1", [session]); } catch {} } }
+  await save(session, { session, restaurant_id: stash.restaurant_id, lines: stash.lines });
+  return { cart: await get(session) };
+}
+module.exports = { get, addLine, clear, findItem, savedCarts, switchCart, restoreCart };

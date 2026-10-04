@@ -90,6 +90,18 @@ http.createServer(async (req, res) => {
     const b = await body(req);
     return json(res, 200, await cart.clear(b.session || "dev"));
   }
+  if (u.pathname === "/cart/switch" && req.method === "POST") {
+    const b = await body(req);
+    return json(res, 200, await cart.switchCart(b.session || "dev"));
+  }
+  if (u.pathname === "/carts/saved" && req.method === "GET") {
+    return json(res, 200, { saved: await cart.savedCarts(u.searchParams.get("session") || "dev") });
+  }
+  if (u.pathname === "/cart/restore" && req.method === "POST") {
+    const b = await body(req);
+    const r = await cart.restoreCart(b.session || "dev", b.restaurant_id);
+    return r.error ? json(res, 404, r) : json(res, 200, r);
+  }
   if (u.pathname === "/checkout" && req.method === "POST") {
     const b = await body(req);
     const rest = catalog.detail(((await cart.get(b.session || "dev")).restaurant_id) || "");

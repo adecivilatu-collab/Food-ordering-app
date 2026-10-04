@@ -1,4 +1,4 @@
-// Phase 9 tests — pricing, state machine, cart rules. Run: npm test --workspace api
+// Phase 9 tests — pricing, state machine, cart rules (async pg-backed). Run: npm test --workspace api
 const test = require("node:test");
 const assert = require("node:assert");
 const { price } = require("../src/modules/payments/paystack");
@@ -25,17 +25,17 @@ test("state machine: RBAC enforced", () => {
   const r = advance(o, "accepted", "rider");
   assert.equal(r.code, 403);
 });
-test("cart: single-restaurant enforced", () => {
-  cart.clear("t1");
-  const a = cart.addLine("t1", { item_id: "f1", qty: 1 });
+test("cart: single-restaurant enforced", async () => {
+  await cart.clear("t1");
+  const a = await cart.addLine("t1", { item_id: "f1", qty: 1 });
   assert.ok(!a.error);
-  const b = cart.addLine("t1", { item_id: "f3", qty: 1 });
+  const b = await cart.addLine("t1", { item_id: "f3", qty: 1 });
   assert.ok(b.error);
-  cart.clear("t1");
+  await cart.clear("t1");
 });
-test("cart: option delta priced", () => {
-  cart.clear("t2");
-  const r = cart.addLine("t2", { item_id: "f1", qty: 2, options: { protein: "Fish" } });
+test("cart: option delta priced", async () => {
+  await cart.clear("t2");
+  const r = await cart.addLine("t2", { item_id: "f1", qty: 2, options: { protein: "Fish" } });
   assert.equal(r.cart.lines[0].unit_kobo, 400000);
-  cart.clear("t2");
+  await cart.clear("t2");
 });

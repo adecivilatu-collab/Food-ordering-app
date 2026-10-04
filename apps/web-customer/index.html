@@ -12,6 +12,12 @@ header input{width:100%;max-width:480px;border:0;border-radius:var(--radius-md);
 .cats{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
 .cat{background:var(--color-surface);border:1px solid var(--color-accent);border-radius:999px;padding:8px 14px;white-space:nowrap;font-size:var(--fs-14);cursor:pointer}
 .cat.active{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
+.icons{display:flex;gap:14px;overflow-x:auto;padding:12px 2px}
+.icon{background:none;border:0;width:auto;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;min-width:68px}
+.icon img{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--color-accent);background:linear-gradient(135deg,var(--color-primary),var(--color-accent))}
+.icon.active img{border-color:var(--color-primary);box-shadow:0 0 0 3px var(--color-accent)}
+.icon span{font-size:var(--fs-12);color:var(--color-text);white-space:nowrap}
+.icon.active span{font-weight:800}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .card{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);overflow:hidden}
 .card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--color-surface)}
@@ -19,25 +25,74 @@ header input{width:100%;max-width:480px;border:0;border-radius:var(--radius-md);
 .muted{color:var(--color-muted);font-size:var(--fs-14)}
 .badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:var(--fs-12);font-weight:700}
 .open{background:var(--color-success);color:#fff}.closed{background:var(--color-muted);color:#fff}.promo{background:var(--color-accent)}
+.tag{position:absolute;top:8px;left:8px;background:var(--color-danger);color:#fff;border-radius:8px;padding:2px 8px;font-size:var(--fs-12);font-weight:800}
+.card.shut{opacity:.55}.card.shut img{filter:grayscale(1)}
+.eta{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;border-radius:8px;padding:2px 8px;font-size:var(--fs-12)}
+.pic{position:relative}.pic img{display:block}
+.carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 12px}
+.slide{min-width:82%;scroll-snap-align:start;border-radius:var(--radius-lg);padding:20px;color:#fff;position:relative;overflow:hidden}
+.slide h3{margin:0 0 4px}.slide p{margin:0 0 10px;opacity:.9}
+.slide button{width:auto;background:#fff;color:var(--color-primary-dark)}
+.s1{background:linear-gradient(120deg,var(--color-primary),#7a2f10)}
+.s2{background:linear-gradient(120deg,var(--color-clay,#8B5E3C),#3d2a18)}
+.s3{background:linear-gradient(120deg,#1B3A28,#2D5A3D)}
+nav.tabs{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--color-accent);display:flex;justify-content:space-around;padding:8px 0;margin-top:16px}
+nav.tabs a{color:var(--color-muted);font-size:var(--fs-12);text-decoration:none;text-align:center}
+nav.tabs a.on{color:var(--color-primary);font-weight:800}
 button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700;width:100%}
 </style>
 </head>
 <body>
-<header><b>🍲 Foodiebator — Lagos</b><br><input id="q" placeholder="Search jollof, pizza, shawarma..."></header>
+<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:40px;vertical-align:middle;border-radius:10px"> <b>Foodiebator — Lagos</b><br><input id="q" placeholder="Search jollof, pizza, shawarma..."></header>
 <div class="wrap">
+<div class="carousel" id="promo">
+<div class="slide s1"><h3>Free delivery weekend</h3><p>Mama Put Kitchen • Lagos</p><button>Order now</button></div>
+<div class="slide s2"><h3>20% off Golfer's Hub</h3><p>Burgers & shawarma • 22 min</p><button>See deals</button></div>
+<div class="slide s3"><h3>New: Golfer's Hub</h3><p>⭐ 4.6 (210) • Try the Classic Burger</p><button>Explore</button></div>
+</div>
+<div class="icons" id="icons"></div>
 <div class="cats" id="cats"></div>
 <h2>Nearby Restaurants</h2>
 <div class="grid" id="list"><p class="muted">Loading... (start API: npm run dev --workspace api)</p></div>
 </div>
+<nav class="tabs"><a class="on" href="index.html">🏠<br>Home</a><a href="index.html">🔍<br>Search</a><a href="cart.html">🛒<br>Cart</a><a href="orders.html">🧾<br>Orders</a></nav>
 <script>
 const API = "http://localhost:4000";
 let ALL = [], ACTIVE_CAT = "";
+const PHOTOS = {
+  r1: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=640&q=60",
+  r2: "https://images.unsplash.com/photo-1562967914-608f82629710?w=640&q=60",
+  r3: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=640&q=60",
+  r4: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=640&q=60",
+};
+const ICONS = {
+  Nigerian: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=160&q=60",
+  African: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=160&q=60",
+  "Fast Food": "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=160&q=60",
+  Pizza: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=160&q=60",
+  Burgers: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=160&q=60",
+  Chicken: "https://images.unsplash.com/photo-1562967914-608f82629710?w=160&q=60",
+  Rice: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=160&q=60",
+  Shawarma: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=160&q=60",
+  Chinese: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=160&q=60",
+  Bakery: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=160&q=60",
+  Desserts: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=160&q=60",
+  Drinks: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=160&q=60",
+  Healthy: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=160&q=60",
+};
+const FALLBACK_ICON = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=160&q=60";
+function renderCats(list) {
+  document.getElementById("icons").innerHTML = list.map((c) => `<button class="icon${ACTIVE_CAT === c ? " active" : ""}" onclick="pick('${c}')"><img src="${ICONS[c] || FALLBACK_ICON}" alt="${c}" loading="lazy" onerror="this.remove()"><span>${c}</span></button>`).join("");
+  document.getElementById("cats").innerHTML = list.map((c) => `<button class="cat" data-c="${c}" onclick="pick('${c}')">${c}</button>`).join("");
+}
 function card(x) {
+  const photo = PHOTOS[x.id] || PHOTOS.r1;
   return `
-      <div class="card"><img alt="${x.name}">
-        <div class="b"><b>${x.name}</b><div class="muted">${x.cuisines.join(" • ")} • ${x.eta_min} min • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
+      <div class="card${x.open ? "" : " shut"}"><div class="pic"><img src="${photo}" alt="${x.name}" loading="lazy" onerror="this.remove()">
+        ${x.discount_pct ? `<span class="tag">-${x.discount_pct}%</span>` : x.promo ? `<span class="tag" style="background:var(--color-accent);color:var(--color-text)">${x.promo}</span>` : ""}<span class="eta">${x.eta_min} min</span></div>
+        <div class="b"><b>${x.name}</b><div class="muted">📍 ${x.area || "Lagos"} • ${x.cuisines.join(" • ")} • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
         <span class="badge ${x.open ? "open" : "closed"}">${x.open ? "Open" : "Closed"}</span>
-        ${x.promo ? `<span class="badge promo">${x.promo}</span>` : ""} ⭐ ${x.rating} (${x.reviews})
+        ⭐ ${x.rating} (${x.reviews})
         <p><a href="restaurant.html?id=${x.id}"><button>View Menu</button></a></p></div></div>`;
 }
 function render() {
@@ -48,6 +103,7 @@ function render() {
     return true;
   });
   document.querySelectorAll(".cat").forEach((el) => el.classList.toggle("active", el.dataset.c === ACTIVE_CAT));
+  document.querySelectorAll(".icon").forEach((el) => el.classList.toggle("active", el.querySelector("span").textContent === ACTIVE_CAT));
   document.getElementById("list").innerHTML = list.map(card).join("") || "<p>No matches — try another word or category.</p>";
 }
 function pick(c) {
@@ -58,12 +114,13 @@ async function load() {
   let demo = false;
   try {
     const cats = await (await fetch(API + "/categories")).json();
-    document.getElementById("cats").innerHTML = cats.categories.map((c) => `<button class="cat" data-c="${c}" onclick="pick('${c}')">${c}</button>`).join("");
+    renderCats(cats.categories);
     const r = await (await fetch(API + "/restaurants")).json();
     ALL = r.restaurants;
   } catch (e) {
     demo = true;
-    document.getElementById("cats").innerHTML = ["Nigerian", "Burgers", "Shawarma", "Chicken", "Rice", "Fast Food"].map((c) => `<button class="cat" data-c="${c}" onclick="pick('${c}')">${c}</button>`).join("");
+    const demoCats = ["Nigerian", "Burgers", "Shawarma", "Chicken", "Rice", "Fast Food"];
+    renderCats(demoCats);
     ALL = [
       { id: "r1", name: "Mama Put Kitchen", cuisines: ["Nigerian", "Rice"], rating: 4.2, reviews: 180, eta_min: 25, fee_kobo: 80000, open: true, promo: "Free Delivery" },
       { id: "r2", name: "Chicken Republic Lite", cuisines: ["Fast Food", "Chicken"], rating: 4.5, reviews: 320, eta_min: 20, fee_kobo: 50000, open: true },
@@ -75,6 +132,41 @@ async function load() {
 }
 document.getElementById("q").addEventListener("input", render);
 load();
+setInterval(() => {
+  const c = document.getElementById("promo");
+  if (!c) return;
+  const next = c.scrollLeft + c.clientWidth * 0.85 >= c.scrollWidth ? 0 : c.scrollLeft + c.clientWidth * 0.85;
+  c.scrollTo({ left: next, behavior: "smooth" });
+}, 4000);
+</script>
+<style>
+#chatbtn{position:fixed;bottom:76px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--color-primary);color:#fff;border:0;font-size:24px;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}
+#chatbox{position:fixed;bottom:140px;right:16px;width:min(340px,90vw);max-height:50vh;background:#fff;border:1px solid var(--color-accent);border-radius:16px;display:none;flex-direction:column;overflow:hidden;z-index:20;box-shadow:0 8px 28px rgba(0,0,0,.3)}
+#chatbox.open{display:flex}
+#chatlog{padding:12px;overflow:auto;flex:1;font-size:14px}
+#chatlog .u{text-align:right;margin:6px 0}#chatlog .u span{background:var(--color-primary);color:#fff;border-radius:12px;padding:6px 10px;display:inline-block}
+#chatlog .b{margin:6px 0}#chatlog .b span{background:var(--color-surface);border-radius:12px;padding:6px 10px;display:inline-block}
+#chatrow{display:flex;border-top:1px solid var(--color-accent)}#chatrow input{flex:1;border:0;padding:12px;font-size:14px}#chatrow button{width:auto;border-radius:0}
+</style>
+<button id="chatbtn" onclick="chatToggle()">💬</button>
+<div id="chatbox"><div id="chatlog"><div class="b"><span>Hi! Ask about orders, fees, or food. 🍲</span></div></div><div id="chatrow"><input id="chatq" placeholder="Type a question..."><button onclick="chatSend()">➤</button></div></div>
+<script>
+async function chatSend() {
+  const q = document.getElementById("chatq");
+  const text = q.value.trim();
+  if (!text) return;
+  q.value = "";
+  const log = document.getElementById("chatlog");
+  log.innerHTML += `<div class="u"><span>${text.replace(/</g, "&lt;")}</span></div>`;
+  log.innerHTML += `<div class="b" id="typing"><span>...</span></div>`;
+  try {
+    const r = await (await fetch("http://localhost:4000/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
+    document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline — start it first.</span></div>`; }
+  log.scrollTop = log.scrollHeight;
+}
+function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && document.activeElement && document.activeElement.id === "chatq") chatSend(); });
 </script>
 </body>
 </html>

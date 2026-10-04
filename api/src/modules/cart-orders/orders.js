@@ -69,4 +69,8 @@ async function list() {
   return [...mem.values()];
 }
 async function touch(order) { await persist(order); return order; }
-module.exports = { checkout, get, list, touch };
+async function listByPhone(phone) {
+  const all = await list();
+  return all.filter((o) => o.contact && o.contact.phone === phone);
+}
+module.exports = { checkout, get, list, touch, listByPhone };

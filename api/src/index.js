@@ -248,6 +248,11 @@ http.createServer(async (req, res) => {
     const answer = await supportChat.chat({ question: b.question || "", order }, catalog.list());
     return json(res, 200, { answer });
   }
+  if (u.pathname === "/orders" && req.method === "GET") {
+    const phone = u.searchParams.get("phone") || "";
+    if (!phone) return json(res, 400, { error: "phone required" });
+    return json(res, 200, { orders: await orders.listByPhone(phone) });
+  }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ app: "foodiebator-api", phase: "5.1" }));

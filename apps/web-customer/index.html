@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Foodiebator — Home</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B3A28">
+<link rel="icon" href="../../packages/ui-tokens/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
 <style>
 body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
@@ -56,6 +59,8 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 <div class="grid" id="list"><p class="muted">Loading... (start API: npm run dev --workspace api)</p></div>
 </div>
 <nav class="tabs"><a class="on" href="index.html">🏠<br>Home</a><a href="index.html">🔍<br>Search</a><a href="cart.html">🛒<br>Cart</a><a href="orders.html">🧾<br>Orders</a></nav>
+<button id="installbtn" style="display:none;position:fixed;bottom:140px;left:16px;width:auto;background:var(--color-primary-dark)">📲 Install app</button>
+<div id="installhelp" style="display:none;position:fixed;bottom:140px;left:16px;right:16px;background:#fff;border:2px solid var(--color-accent);border-radius:16px;padding:14px;z-index:30">To install: <b>Android Chrome</b> → ⋮ menu → <b>Install app</b> / <b>Add to Home screen</b>. <b>iPhone</b> → Share → <b>Add to Home Screen</b>. <button onclick="document.getElementById('installhelp').style.display='none'" style="width:auto;margin-top:8px">Got it</button></div>
 <script>
 const API = "http://localhost:4000";
 let ALL = [], ACTIVE_CAT = "";
@@ -132,6 +137,24 @@ async function load() {
 }
 document.getElementById("q").addEventListener("input", render);
 load();
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("installbtn").style.display = "block";
+});
+document.getElementById("installbtn").addEventListener("click", async () => {
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; document.getElementById("installbtn").style.display = "none"; }
+  else document.getElementById("installhelp").style.display = "block";
+});
+setTimeout(() => {
+  if (!deferredPrompt && !window.matchMedia("(display-mode: standalone)").matches) {
+    document.getElementById("installbtn").style.display = "block";
+  }
+}, 6000);
 setInterval(() => {
   const c = document.getElementById("promo");
   if (!c) return;

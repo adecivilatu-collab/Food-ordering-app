@@ -1,0 +1,13 @@
+{
+  "name": "Foodiebator — Food Delivery",
+  "short_name": "Foodiebator",
+  "description": "Order food from Lagos restaurants: browse menus, pay, track delivery.",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FAF7F0",
+  "theme_color": "#1B3A28",
+  "icons": [
+    { "src": "../../packages/ui-tokens/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -9,7 +9,7 @@ const NEXT = {
   delivered: [], cancelled: [],
 };
 const ROLE_ALLOWED = {
-  restaurant: ["accepted", "preparing", "ready"],
+  restaurant: ["accepted", "preparing", "ready", "cancelled"],
   rider: ["picked_up", "on_the_way", "delivered"],
   admin: ["accepted", "preparing", "ready", "picked_up", "on_the_way", "delivered", "cancelled"],
 };

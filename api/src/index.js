@@ -147,7 +147,7 @@ http.createServer(async (req, res) => {
   if (u.pathname.startsWith("/restaurant/menu/") && req.method === "PATCH") {
     const id = u.pathname.split("/")[3];
     const b = await body(req);
-    const r = b.price_kobo !== undefined ? restaurant.setPrice(id, b.price_kobo) : restaurant.setAvailability(id, b.available);
+    const r = b.price_kobo !== undefined ? restaurant.setPrice(id, b.price_kobo) : b.photo !== undefined ? restaurant.setPhoto(id, b.photo) : restaurant.setAvailability(id, b.available);
     return r.error ? json(res, 404, r) : json(res, 200, r);
   }
   if (u.pathname === "/restaurant/hours" && req.method === "PUT") {
@@ -265,7 +265,17 @@ http.createServer(async (req, res) => {
     if (!phone) return json(res, 400, { error: "phone required" });
     return json(res, 200, { orders: await orders.listByPhone(phone) });
   }
-  if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
+  if (u.pathname.startsWith("/orders/") && u.pathname.endsWith("/prep") && req.method === "POST") {
+    const id = u.pathname.split("/")[2];
+    const o = await orders.get(id);
+    if (!o) return json(res, 404, { error: "not found" });
+    const b = await body(req);
+    o.eta_min = (o.eta_min || 30) + (Number(b.add_min) || 0);
+    o.timeline.push({ status: o.order_status, event: "eta_updated", eta_min: o.eta_min, at: new Date().toISOString() });
+    await orders.touch(o);
+    notify.send("preparing", o);
+    return json(res, 200, { order: o });
+  }
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ app: "foodiebator-api", phase: "5.1" }));
 }).listen(port, () => console.log("api on " + port));

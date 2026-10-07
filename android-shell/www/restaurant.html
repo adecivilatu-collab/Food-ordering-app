@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Restaurant Menu</title>
-<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
 <style>
 body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
 header{background:var(--color-primary-dark);color:#fff;padding:16px}
@@ -22,29 +22,29 @@ select,input{border:1px solid var(--color-accent);border-radius:var(--radius-md)
 </style>
 </head>
 <body>
-<header><a href="index.html" style="color:var(--color-accent)">â† Home</a> <img src="assets/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 id="name" style="margin:4px 0">Restaurant</h2><div class="muted" id="info" style="color:#eee"></div></header>
+<header><a href="index.html" style="color:var(--color-accent)">← Home</a> <img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 id="name" style="margin:4px 0">Restaurant</h2><div class="muted" id="info" style="color:#eee"></div></header>
 <div class="wrap"><div id="menu"><p class="muted">Loading menu...</p></div></div>
-<div id="bar"><span id="count">Cart: 0 items</span><span><a href="cart.html">Full cart â†’</a> <button onclick="sheet(true)" style="width:auto;margin-left:8px">View ðŸ›’</button></span></div>
+<div id="bar"><span id="count">Cart: 0 items</span><span><a href="cart.html">Full cart →</a> <button onclick="sheet(true)" style="width:auto;margin-left:8px">View Cart</button></span></div>
 <div id="scrim" onclick="sheet(false)"></div>
 <div id="switchprompt" style="display:none;position:fixed;left:12px;right:12px;bottom:140px;background:#fff;border:2px solid var(--color-accent);border-radius:16px;padding:16px;z-index:30;box-shadow:0 8px 28px rgba(0,0,0,.3)">
 <b>Start a new cart here?</b><p class="muted" id="switchtext" style="margin:6px 0"></p>
 <button onclick="doSwitch()" style="width:auto">Switch (items saved)</button>
 <button onclick="hideSwitch()" style="width:auto;background:var(--color-muted)">Keep old cart</button>
 </div>
-<div id="sheet"><div class="grab"></div><h3 style="margin-top:0">Your cart</h3><div id="lines"></div><button onclick="location='cart.html'">Checkout â†’</button> <button onclick="sheet(false)" style="background:var(--color-muted)">Close</button></div>
+<div id="sheet"><div class="grab"></div><h3 style="margin-top:0">Your cart</h3><div id="lines"></div><button onclick="location='cart.html'">Checkout →</button> <button onclick="sheet(false)" style="background:var(--color-muted)">Close</button></div>
 <script>
-const API = "http://localhost:4000";
+const API = localStorage.getItem("apiBase") || "http://localhost:4000";
 const id = new URLSearchParams(location.search).get("id") || "r1";
 let SESSION = localStorage.getItem("session");
 if (!SESSION) { fetch(API + "/guest/session").then((r) => r.json()).then((j) => { SESSION = j.session; localStorage.setItem("session", SESSION); }); }
 async function load() {
   const r = await (await fetch(API + "/r/" + id)).json();
   document.getElementById("name").textContent = r.name;
-  document.getElementById("info").textContent = `ðŸ“ ${r.area || "Lagos"} â€¢ ${r.cuisines.join(" â€¢ ")} â€¢ â­ ${r.rating} (${r.reviews}) â€¢ ${r.eta_min} min`;
+  document.getElementById("info").textContent = `${r.area || "Lagos"} • ${r.cuisines.join(" • ")} • ★ ${r.rating} (${r.reviews}) • ${r.eta_min} min`;
   const m = await (await fetch(API + "/r/" + id + "/menu")).json();
   document.getElementById("menu").innerHTML = m.menu.map((f) => `
-    <div class="item"><div><b>${f.name}</b><div class="price">â‚¦${(f.price_kobo / 100).toLocaleString()}</div>
-    ${f.options ? f.options.map((o) => `<select data-f="${f.id}" data-t="${o.type}">${o.choices.map((c) => `<option>${c.name}${c.delta_kobo ? " (+â‚¦" + (c.delta_kobo / 100).toLocaleString() + ")" : ""}</option>`).join("")}</select>`).join("") : ""}</div>
+    <div class="item"><div><b>${f.name}</b><div class="price">₦${(f.price_kobo / 100).toLocaleString()}</div>
+    ${f.options ? f.options.map((o) => `<select data-f="${f.id}" data-t="${o.type}">${o.choices.map((c) => `<option>${c.name}${c.delta_kobo ? " (+₦" + (c.delta_kobo / 100).toLocaleString() + ")" : ""}</option>`).join("")}</select>`).join("") : ""}</div>
     <button onclick="add('${f.id}')">Add +</button></div>`).join("");
   refresh();
 }
@@ -56,7 +56,7 @@ async function add(item_id) {
   if (r.error && r.cart) {
     PENDING_ADD = { item_id, options };
     const n = r.cart.lines.reduce((s, l) => s + l.qty, 0);
-    document.getElementById("switchtext").textContent = `Your cart has ${n} item(s) from another restaurant â€” kept safe. Switch to order here?`;
+    document.getElementById("switchtext").textContent = `Your cart has ${n} item(s) from another restaurant — kept safe. Switch to order here?`;
     document.getElementById("switchprompt").style.display = "block";
     return;
   }
@@ -73,8 +73,8 @@ async function refresh() {
   if (!SESSION) return;
   const c = await (await fetch(API + "/cart?session=" + SESSION)).json();
   const n = c.lines.reduce((s, l) => s + l.qty, 0);
-  document.getElementById("count").textContent = `Cart: ${n} items â€¢ â‚¦${((c.subtotal_kobo || 0) / 100).toLocaleString()}`;
-  document.getElementById("lines").innerHTML = c.lines.map((l) => `<p><b>${l.name} Ã— ${l.qty}</b> â€” â‚¦${(l.line_kobo / 100).toLocaleString()}</p>`).join("") || "<p>Empty.</p>";
+  document.getElementById("count").textContent = `Cart: ${n} items • ₦${((c.subtotal_kobo || 0) / 100).toLocaleString()}`;
+  document.getElementById("lines").innerHTML = c.lines.map((l) => `<p><b>${l.name} × ${l.qty}</b> — ₦${(l.line_kobo / 100).toLocaleString()}</p>`).join("") || "<p>Empty.</p>";
 }
 function sheet(open) {
   document.getElementById("sheet").classList.toggle("open", open);
@@ -92,8 +92,8 @@ load();
 #chatlog .b{margin:6px 0}#chatlog .b span{background:var(--color-surface);border-radius:12px;padding:6px 10px;display:inline-block}
 #chatrow{display:flex;border-top:1px solid var(--color-accent)}#chatrow input{flex:1;border:0;padding:12px;font-size:14px}#chatrow button{width:auto;border-radius:0}
 </style>
-<button id="chatbtn" onclick="chatToggle()">ðŸ’¬</button>
-<div id="chatbox"><div id="chatlog"><div class="b"><span>Hi! Ask about orders, fees, or food. ðŸ²</span></div></div><div id="chatrow"><input id="chatq" placeholder="Type a question..."><button onclick="chatSend()">âž¤</button></div></div>
+<button id="chatbtn" onclick="chatToggle()">?</button>
+<div id="chatbox"><div id="chatlog"><div class="b"><span>Hi! Ask about orders, fees, or food.</span></div></div><div id="chatrow"><input id="chatq" placeholder="Type a question..."><button onclick="chatSend()">Send</button></div></div>
 <script>
 async function chatSend() {
   const q = document.getElementById("chatq");
@@ -104,9 +104,9 @@ async function chatSend() {
   log.innerHTML += `<div class="u"><span>${text.replace(/</g, "&lt;")}</span></div>`;
   log.innerHTML += `<div class="b" id="typing"><span>...</span></div>`;
   try {
-    const r = await (await fetch("http://localhost:4000/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
+    const r = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
     document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
-  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline â€” start it first.</span></div>`; }
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline — start it first.</span></div>`; }
   log.scrollTop = log.scrollHeight;
 }
 function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }

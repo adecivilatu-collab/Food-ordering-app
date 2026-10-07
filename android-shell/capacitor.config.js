@@ -4,7 +4,7 @@ const config = {
   appName: "Foodiebator",
   webDir: "www",
   android: {
-    allowMixedContent: false,
+    allowMixedContent: true,
   },
 };
 

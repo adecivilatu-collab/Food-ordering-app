@@ -46,23 +46,31 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 </style>
 </head>
 <body>
-<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:40px;vertical-align:middle;border-radius:10px"> <b>Foodiebator — Lagos</b><br><input id="q" placeholder="Search jollof, pizza, shawarma..."></header>
+<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:40px;vertical-align:middle;border-radius:10px"> <b>Foodiebator — Lagos</b> <button onclick="apiSettings()" style="width:auto;padding:6px 10px;min-height:0;float:right" title="API server">⚙</button><br><input id="q" placeholder="Search jollof, pizza, shawarma..."></header>
 <div class="wrap">
 <div class="carousel" id="promo">
 <div class="slide s1"><h3>Free delivery weekend</h3><p>Mama Put Kitchen • Lagos</p><button>Order now</button></div>
 <div class="slide s2"><h3>20% off Golfer's Hub</h3><p>Burgers & shawarma • 22 min</p><button>See deals</button></div>
-<div class="slide s3"><h3>New: Golfer's Hub</h3><p>⭐ 4.6 (210) • Try the Classic Burger</p><button>Explore</button></div>
+<div class="slide s3"><h3>New: Golfer's Hub</h3><p>★ 4.6 (210) • Try the Classic Burger</p><button>Explore</button></div>
 </div>
 <div class="icons" id="icons"></div>
 <div class="cats" id="cats"></div>
 <h2>Nearby Restaurants</h2>
 <div class="grid" id="list"><p class="muted">Loading... (start API: npm run dev --workspace api)</p></div>
 </div>
-<nav class="tabs"><a class="on" href="index.html">🏠<br>Home</a><a href="index.html">🔍<br>Search</a><a href="cart.html">🛒<br>Cart</a><a href="orders.html">🧾<br>Orders</a></nav>
+<nav class="tabs"><a class="on" href="index.html">Home</a><a href="index.html">Search</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></nav>
 <button id="installbtn" style="display:none;position:fixed;bottom:140px;left:16px;width:auto;background:var(--color-primary-dark)">📲 Install app</button>
 <div id="installhelp" style="display:none;position:fixed;bottom:140px;left:16px;right:16px;background:#fff;border:2px solid var(--color-accent);border-radius:16px;padding:14px;z-index:30">To install: <b>Android Chrome</b> → ⋮ menu → <b>Install app</b> / <b>Add to Home screen</b>. <b>iPhone</b> → Share → <b>Add to Home Screen</b>. <button onclick="document.getElementById('installhelp').style.display='none'" style="width:auto;margin-top:8px">Got it</button></div>
 <script>
-const API = "http://localhost:4000";
+const API = localStorage.getItem("apiBase") || "http://localhost:4000";
+function apiSettings() {
+  const cur = localStorage.getItem("apiBase") || "http://localhost:4000";
+  const v = prompt("API server address (empty = this device localhost).\nSame WiFi as laptop? Use http://192.168.8.101:4000", cur);
+  if (v === null) return;
+  if (v.trim()) localStorage.setItem("apiBase", v.trim());
+  else localStorage.removeItem("apiBase");
+  location.reload();
+}
 let ALL = [], ACTIVE_CAT = "";
 const PHOTOS = {
   r1: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=640&q=60",
@@ -95,9 +103,9 @@ function card(x) {
   return `
       <div class="card${x.open ? "" : " shut"}"><div class="pic"><img src="${photo}" alt="${x.name}" loading="lazy" onerror="this.remove()">
         ${x.discount_pct ? `<span class="tag">-${x.discount_pct}%</span>` : x.promo ? `<span class="tag" style="background:var(--color-accent);color:var(--color-text)">${x.promo}</span>` : ""}<span class="eta">${x.eta_min} min</span></div>
-        <div class="b"><b>${x.name}</b><div class="muted">📍 ${x.area || "Lagos"} • ${x.cuisines.join(" • ")} • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
+        <div class="b"><b>${x.name}</b><div class="muted">${x.area || "Lagos"} • ${x.cuisines.join(" • ")} • ₦${(x.fee_kobo / 100).toLocaleString()} fee</div>
         <span class="badge ${x.open ? "open" : "closed"}">${x.open ? "Open" : "Closed"}</span>
-        ⭐ ${x.rating} (${x.reviews})
+        ★ ${x.rating} (${x.reviews})
         <p><a href="restaurant.html?id=${x.id}"><button>View Menu</button></a></p></div></div>`;
 }
 function render() {
@@ -171,8 +179,8 @@ setInterval(() => {
 #chatlog .b{margin:6px 0}#chatlog .b span{background:var(--color-surface);border-radius:12px;padding:6px 10px;display:inline-block}
 #chatrow{display:flex;border-top:1px solid var(--color-accent)}#chatrow input{flex:1;border:0;padding:12px;font-size:14px}#chatrow button{width:auto;border-radius:0}
 </style>
-<button id="chatbtn" onclick="chatToggle()">💬</button>
-<div id="chatbox"><div id="chatlog"><div class="b"><span>Hi! Ask about orders, fees, or food. 🍲</span></div></div><div id="chatrow"><input id="chatq" placeholder="Type a question..."><button onclick="chatSend()">➤</button></div></div>
+<button id="chatbtn" onclick="chatToggle()">?</button>
+<div id="chatbox"><div id="chatlog"><div class="b"><span>Hi! Ask about orders, fees, or food.</span></div></div><div id="chatrow"><input id="chatq" placeholder="Type a question..."><button onclick="chatSend()">Send</button></div></div>
 <script>
 async function chatSend() {
   const q = document.getElementById("chatq");
@@ -183,7 +191,7 @@ async function chatSend() {
   log.innerHTML += `<div class="u"><span>${text.replace(/</g, "&lt;")}</span></div>`;
   log.innerHTML += `<div class="b" id="typing"><span>...</span></div>`;
   try {
-    const r = await (await fetch("http://localhost:4000/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
+    const r = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
     document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
   } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline — start it first.</span></div>`; }
   log.scrollTop = log.scrollHeight;

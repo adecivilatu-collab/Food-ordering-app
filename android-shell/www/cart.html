@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cart & Checkout</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px}
+.wrap{max-width:640px;margin:auto;padding:16px}
+.row{background:#fff;border:1px solid var(--color-accent);border-radius:var(--radius-lg);padding:12px;margin:8px 0}
+.fees{background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;margin:12px 0}
+.fees div{display:flex;justify-content:space-between;padding:4px 0}
+.total{font-weight:800;font-size:var(--fs-20);border-top:2px solid var(--color-accent);margin-top:8px;padding-top:8px}
+input,select{width:100%;border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:12px;min-height:var(--touch-min);font-size:var(--fs-16);margin:6px 0;box-sizing:border-box}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--radius-md);padding:14px;min-height:var(--touch-min);font-size:var(--fs-16);font-weight:700;width:100%;position:sticky;bottom:12px;box-shadow:0 -2px 12px rgba(0,0,0,.2)}
+.ok{background:var(--color-success);color:#fff;border-radius:var(--radius-lg);padding:16px;margin:12px 0}
+</style>
+</head>
+<body>
+<header><a href="index.html" style="color:var(--color-accent)">â† Home</a> <img src="assets/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 style="margin:4px 0">Cart & Checkout</h2></header>
+<div class="wrap">
+<div id="cart"></div>
+<h3>Delivery & Payment</h3>
+<input id="name" placeholder="Name"><input id="phone" value="+2348012345678">
+<input id="email" placeholder="Email (for card payment receipt)" type="email">
+<input id="addr" placeholder="Delivery address / label">
+<select id="pay"><option value="card">Card (Paystack test)</option><option value="transfer">Bank Transfer</option><option value="ussd">USSD</option><option value="wallet">Wallet</option><option value="cod">Cash on Delivery</option></select>
+<label style="font-size:14px;color:var(--color-muted)">Schedule for later (optional â€” offices love this)</label>
+<input id="sched" type="datetime-local">
+<button onclick="checkout()">Confirm Order</button>
+<div id="done"></div>
+</div>
+<script>
+const API = "http://localhost:4000";
+const SESSION = localStorage.getItem("session");
+async function load() {
+  const c = await (await fetch(API + "/cart?session=" + SESSION)).json();
+  const fee = 80000, service = Math.round((c.subtotal_kobo || 0) * 0.05);
+  const total = (c.subtotal_kobo || 0) + (c.lines.length ? fee + service : 0);
+  document.getElementById("cart").innerHTML = (c.lines.map((l) => `<div class="row"><b>${l.name} Ã— ${l.qty}</b><div>â‚¦${(l.line_kobo / 100).toLocaleString()}</div></div>`).join("") || "<p>Cart is empty.</p>") +
+    `<div class="fees"><div><span>Subtotal</span><span>â‚¦${((c.subtotal_kobo || 0) / 100).toLocaleString()}</span></div><div><span>Delivery</span><span>â‚¦${c.lines.length ? (fee / 100).toLocaleString() : 0}</span></div><div><span>Service 5%</span><span>â‚¦${c.lines.length ? (service / 100).toLocaleString() : 0}</span></div><div class="total"><span>Total</span><span>â‚¦${(total / 100).toLocaleString()}</span></div></div>`;
+}
+async function checkout() {
+  const schedVal = document.getElementById("sched").value;
+  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value, email: document.getElementById("email").value || "" }, payment_method: document.getElementById("pay").value, scheduled_for: schedVal ? new Date(schedVal).toISOString() : undefined }) })).json();
+  if (r.error) { document.getElementById("done").innerHTML = `<div class="ok" style="background:var(--color-danger)">${r.error}</div>`; return; }
+  let extra = "";
+  if (r.order.payment_method !== "cod") {
+    const init = await (await fetch(API + "/payments/initialize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: r.order.id, email: document.getElementById("email").value || "" }) })).json();
+    if (init.authorization_url) extra = `<br><a href="${init.authorization_url}" target="_blank" style="color:#fff;font-weight:800">Pay now on Paystack â†’</a>`;
+  }
+  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b>${r.order.scheduled_for ? `<br>ðŸ• Scheduled for ${new Date(r.order.scheduled_for).toLocaleString()}` : ""}<br>Total â‚¦${(r.order.total_kobo / 100).toLocaleString()} â€¢ ${r.order.payment_method.toUpperCase()} â€¢ Status: ${r.order.order_status}${extra}<br><a href="track.html?id=${r.order.id}" style="color:#fff;font-weight:800">Track your order â†’</a></div>`;
+  load();
+}
+load();
+</script>
+<style>
+#chatbtn{position:fixed;bottom:76px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--color-primary);color:#fff;border:0;font-size:24px;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}
+#chatbox{position:fixed;bottom:140px;right:16px;width:min(340px,90vw);max-height:50vh;background:#fff;border:1px solid var(--color-accent);border-radius:16px;display:none;flex-direction:column;overflow:hidden;z-index:20;box-shadow:0 8px 28px rgba(0,0,0,.3)}
+#chatbox.open{display:flex}
+#chatlog{padding:12px;overflow:auto;flex:1;font-size:14px}
+#chatlog .u{text-align:right;margin:6px 0}#chatlog .u span{background:var(--color-primary);color:#fff;border-radius:12px;padding:6px 10px;display:inline-block}
+#chatlog .b{margin:6px 0}#chatlog .b span{background:var(--color-surface);border-radius:12px;padding:6px 10px;display:inline-block}
+#chatrow{display:flex;border-top:1px solid var(--color-accent)}#chatrow input{flex:1;border:0;padding:12px;font-size:14px}#chatrow button{width:auto;border-radius:0}
+</style>
+<button id="chatbtn" onclick="chatToggle()">ðŸ’¬</button>
+<div id="chatbox"><div id="chatlog"><div class="b"><span>Hi! Ask about orders, fees, or food. ðŸ²</span></div></div><div id="chatrow"><input id="chatq" placeholder="Type a question..."><button onclick="chatSend()">âž¤</button></div></div>
+<script>
+async function chatSend() {
+  const q = document.getElementById("chatq");
+  const text = q.value.trim();
+  if (!text) return;
+  q.value = "";
+  const log = document.getElementById("chatlog");
+  log.innerHTML += `<div class="u"><span>${text.replace(/</g, "&lt;")}</span></div>`;
+  log.innerHTML += `<div class="b" id="typing"><span>...</span></div>`;
+  try {
+    const r = await (await fetch("http://localhost:4000/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
+    document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline â€” start it first.</span></div>`; }
+  log.scrollTop = log.scrollHeight;
+}
+function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && document.activeElement && document.activeElement.id === "chatq") chatSend(); });
+</script>
+</body>
+</html>

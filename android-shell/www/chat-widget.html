@@ -1,0 +1,29 @@
+﻿<style>
+#chatbtn{position:fixed;bottom:76px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--color-primary);color:#fff;border:0;font-size:24px;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}
+#chatbox{position:fixed;bottom:140px;right:16px;width:min(340px,90vw);max-height:50vh;background:#fff;border:1px solid var(--color-accent);border-radius:16px;display:none;flex-direction:column;overflow:hidden;z-index:20;box-shadow:0 8px 28px rgba(0,0,0,.3)}
+#chatbox.open{display:flex}
+#chatlog{padding:12px;overflow:auto;flex:1;font-size:14px}
+#chatlog .u{text-align:right;margin:6px 0}#chatlog .u span{background:var(--color-primary);color:#fff;border-radius:12px;padding:6px 10px;display:inline-block}
+#chatlog .b{margin:6px 0}#chatlog .b span{background:var(--color-surface);border-radius:12px;padding:6px 10px;display:inline-block}
+#chatrow{display:flex;border-top:1px solid var(--color-accent)}#chatrow input{flex:1;border:0;padding:12px;font-size:14px}#chatrow button{width:auto;border-radius:0}
+</style>
+<button id="chatbtn" onclick="chatToggle()">ðŸ’¬</button>
+<div id="chatbox"><div id="chatlog"><div class="b"><span>Hi! Ask about orders, fees, or food. ðŸ²</span></div></div><div id="chatrow"><input id="chatq" placeholder="Type a question..."><button onclick="chatSend()">âž¤</button></div></div>
+<script>
+async function chatSend() {
+  const q = document.getElementById("chatq");
+  const text = q.value.trim();
+  if (!text) return;
+  q.value = "";
+  const log = document.getElementById("chatlog");
+  log.innerHTML += `<div class="u"><span>${text.replace(/</g, "&lt;")}</span></div>`;
+  log.innerHTML += `<div class="b" id="typing"><span>...</span></div>`;
+  try {
+    const r = await (await fetch("http://localhost:4000/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
+    document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline â€” start it first.</span></div>`; }
+  log.scrollTop = log.scrollHeight;
+}
+function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && document.activeElement && document.activeElement.id === "chatq") chatSend(); });
+</script>

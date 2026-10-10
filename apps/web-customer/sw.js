@@ -1,6 +1,6 @@
 // Foodiebator service worker — app shell cached, API always network.
-const CACHE = "foodiebator-v1";
-const SHELL = ["index.html", "restaurant.html", "cart.html", "track.html", "orders.html", "manifest.webmanifest", "../../packages/ui-tokens/tokens.css", "../../packages/ui-tokens/logo.svg"];
+const CACHE = "foodiebator-v2";
+const SHELL = ["index.html", "restaurant.html", "cart.html", "track.html", "orders.html", "manifest.webmanifest", "assets/tokens.css", "assets/logo.svg", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

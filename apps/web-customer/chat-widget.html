@@ -21,7 +21,7 @@ async function chatSend() {
   try {
     const r = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
     document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
-  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline — start it first.</span></div>`; }
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline - start it first.</span></div>`; }
   log.scrollTop = log.scrollHeight;
 }
 function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }

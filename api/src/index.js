@@ -12,7 +12,31 @@ const engage = require("./modules/engagement");
 const paystack = require("./modules/payments/paystack");
 const notify = require("./modules/notify");
 const supportChat = require("./modules/support-chat");
+let baAuth = null;
 let baHandler = null;
+async function baSession(req) {
+  try {
+    if (!baAuth) baAuth = (await import("./auth.mjs")).auth;
+    const headers = new Headers();
+    if (req.headers.cookie) headers.set("cookie", req.headers.cookie);
+    if (req.headers.authorization) headers.set("authorization", req.headers.authorization);
+    return await baAuth.api.getSession({ headers });
+  } catch { return null; }
+}
+const ROLE_PERMS = {
+  superadmin: ["*"],
+  support: ["orders", "refunds", "tickets", "reviews", "riders", "restaurants-view"],
+  finance: ["payments", "promos", "metrics", "refunds"],
+};
+async function requirePerm(req, res, perm) {
+  const s = await baSession(req);
+  const role = s && s.user && s.user.role;
+  if (!role) { json(res, 401, { error: "login required" }); return null; }
+  if (role !== "superadmin" && !(ROLE_PERMS[role] || []).includes(perm)) {
+    json(res, 403, { error: "forbidden for role " + role }); return null;
+  }
+  return s;
+}
 async function betterAuthHandler(req, res) {
   if (!baHandler) {
     const { toNodeHandler } = await import("better-auth/node");
@@ -38,7 +62,13 @@ function body(req) {
 }
 
 http.createServer(async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Role,Idempotency-Key,X-Paystack-Signature");
   if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
@@ -163,6 +193,7 @@ http.createServer(async (req, res) => {
     return json(res, 201, rider.register(b));
   }
   if (u.pathname.startsWith("/rider/") && u.pathname.endsWith("/approve") && req.method === "POST") {
+    if (!await requirePerm(req, res, "riders")) return;
     const r = rider.approve(u.pathname.split("/")[2]);
     return r.error ? json(res, 404, r) : json(res, 200, r);
   }
@@ -179,13 +210,24 @@ http.createServer(async (req, res) => {
     if (!o) return json(res, 404, { error: "not found" });
     return json(res, 200, { order_no: o.order_no, status: o.order_status, eta_min: o.eta_min || 30, rider_id: o.rider_id || null, timeline: o.timeline, scheduled_for: o.scheduled_for || null });
   }
-  if (u.pathname === "/admin/riders") return json(res, 200, { riders: rider.list() });
-  if (u.pathname === "/admin/orders") return json(res, 200, { orders: await orders.list() });
+  if (u.pathname === "/admin/riders") {
+    if (!await requirePerm(req, res, "riders")) return;
+    return json(res, 200, { riders: rider.list() });
+  }
+  if (u.pathname === "/admin/orders") {
+    if (!await requirePerm(req, res, "orders")) return;
+    return json(res, 200, { orders: await orders.list() });
+  }
   if (u.pathname === "/admin/payments") {
+    if (!await requirePerm(req, res, "payments")) return;
     return json(res, 200, { payments: (await orders.list()).map((o) => ({ order_id: o.id, method: o.payment_method, status: o.payment_status, total_kobo: o.total_kobo })) });
   }
-  if (u.pathname === "/admin/promos") return json(res, 200, { promos: restaurant.promos });
+  if (u.pathname === "/admin/promos") {
+    if (!await requirePerm(req, res, "promos")) return;
+    return json(res, 200, { promos: restaurant.promos });
+  }
   if (u.pathname === "/admin/refunds" && req.method === "POST") {
+    if (!await requirePerm(req, res, "refunds")) return;
     const b = await body(req);
     return json(res, 201, admin.refund(b));
   }
@@ -237,16 +279,19 @@ http.createServer(async (req, res) => {
     return json(res, 200, { ack: true });
   }
   if (u.pathname.startsWith("/reviews/") && u.pathname.endsWith("/moderate") && req.method === "POST") {
+    if (!await requirePerm(req, res, "reviews")) return;
     const b = await body(req);
     const r = engage.moderate(u.pathname.split("/")[2], b.action, b.response);
     return r.error ? json(res, 404, r) : json(res, 200, r);
   }
   if (u.pathname.startsWith("/support/") && u.pathname.endsWith("/resolve") && req.method === "POST") {
+    if (!await requirePerm(req, res, "tickets")) return;
     const b = await body(req);
     const r = engage.resolveTicket(u.pathname.split("/")[2], b.resolution);
     return r.error ? json(res, 404, r) : json(res, 200, r);
   }
   if (u.pathname === "/admin/metrics") {
+    if (!await requirePerm(req, res, "metrics")) return;
     const list = await orders.list();
     const done = list.filter((o) => o.order_status === "delivered");
     const cancelled = list.filter((o) => o.order_status === "cancelled");
@@ -256,6 +301,7 @@ http.createServer(async (req, res) => {
     return json(res, 200, { orders: list.length, delivered: done.length, cancelled: cancelled.length, completion_rate: list.length ? +(done.length / list.length).toFixed(2) : null, aov_kobo: aov, csat_avg: csat, refunds: admin.refunds.length });
   }
   if (u.pathname.startsWith("/admin/restaurants/") && u.pathname.endsWith("/status") && req.method === "POST") {
+    if (!await requirePerm(req, res, "restaurants")) return;
     const r = catalog.detail(u.pathname.split("/")[3]);
     if (!r) return json(res, 404, { error: "not found" });
     const b = await body(req);

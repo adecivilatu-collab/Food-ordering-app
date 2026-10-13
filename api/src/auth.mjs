@@ -1,7 +1,8 @@
 // Better Auth — LOCKED auth system. pg Pool (local Docker DB), phone OTP (console in dev).
 import { betterAuth } from "better-auth";
-import { phoneNumber, emailOTP } from "better-auth/plugins";
+import { phoneNumber, emailOTP, admin } from "better-auth/plugins";
 import { Pool } from "pg";
+import { ac, superadmin, support, finance } from "./permissions.mjs";
 
 async function sendEmail({ to, subject, html }) {
   const key = process.env.ZEPTOMAIL_API_KEY;
@@ -30,6 +31,12 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET || "change-me-dev-only",
   emailAndPassword: { enabled: true },
   plugins: [
+    admin({
+      defaultRole: "customer",
+      adminRoles: ["superadmin"],
+      ac,
+      roles: { superadmin, support, finance },
+    }),
     phoneNumber({
       sendOTP: ({ phoneNumber, code }) => {
         // Dev: console. Pilot: wire SMS provider here. ZeptoMail handles email separately.

@@ -20,11 +20,13 @@ h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
 </style>
 </head>
 <body>
-<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"> <b>Admin Console</b> <button class="small dark" style="float:right" onclick="loadAll()">Refresh</button></header>
+<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"> <b>Admin Console</b> <span id="who" class="muted"></span> <button class="small dark" style="float:right" onclick="loadAll()">Refresh</button></header>
 <div class="wrap">
+<div class="card" id="loginbox"><b>Admin sign in</b><div class="row"><input id="lemail" placeholder="Email" type="email" style="flex:1"><input id="lpass" placeholder="Password" type="password" style="flex:1"><button class="small" onclick="login()">Sign in</button><button class="small grey" onclick="logout()">Sign out</button></div><div id="lmsg" class="muted"></div></div>
 <h2>Marketplace health</h2><div class="tiles" id="metrics"></div>
 <h2>Orders</h2><div id="orders"></div>
 <h2>Riders (approvals)</h2><div id="riders"></div>
+<h2>Live deliveries (rider tracking)</h2><div id="live"></div>
 <h2>Restaurants (approve/suspend)</h2><div id="rests"></div>
 <h2>Refunds</h2>
 <div class="card"><div class="row"><input id="rf_order" placeholder="Order id"><input id="rf_amt" placeholder="Amount kobo" type="number"><input id="rf_reason" placeholder="Reason" style="flex:1"><button class="small red" onclick="doRefund()">Approve refund</button></div><div id="rmsg" class="muted"></div></div>
@@ -33,12 +35,24 @@ h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
 <script>
 const API = localStorage.getItem("apiBase") || "http://localhost:4000";
 async function api(m, p, b) {
-  const r = await fetch(API + p, { method: m, headers: { "Content-Type": "application/json" }, body: b ? JSON.stringify(b) : undefined });
+  const r = await fetch(API + p, { method: m, credentials: "include", headers: { "Content-Type": "application/json" }, body: b ? JSON.stringify(b) : undefined });
   return r.json();
+}
+async function login() {
+  const r = await fetch(API + "/api/auth/sign-in/email", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("lemail").value, password: document.getElementById("lpass").value }) });
+  const j = await r.json();
+  document.getElementById("lmsg").textContent = j.user ? ("Signed in as " + j.user.email + " (" + (j.user.role || "?") + ")") : ("Failed: " + JSON.stringify(j).slice(0, 120));
+  loadAll();
+}
+async function logout() {
+  await fetch(API + "/api/auth/sign-out", { method: "POST", credentials: "include" });
+  document.getElementById("lmsg").textContent = "Signed out.";
+  loadAll();
 }
 async function loadAll() {
   try {
-    const m = await (await fetch(API + "/admin/metrics")).json();
+    const m = await (await fetch(API + "/admin/metrics", { credentials: "include" })).json();
+    if (m.error) { document.getElementById("metrics").innerHTML = "<p>Sign in as admin to view (" + m.error + ").</p>"; return; }
     document.getElementById("metrics").innerHTML = `
       <div class="tile"><b>${m.orders}</b><span class="muted">Orders</span></div>
       <div class="tile"><b>${m.delivered}</b><span class="muted">Delivered</span></div>
@@ -46,13 +60,17 @@ async function loadAll() {
       <div class="tile"><b>${m.completion_rate === null ? "-" : m.completion_rate}</b><span class="muted">Completion</span></div>
       <div class="tile"><b>[N]${(m.aov_kobo / 100).toLocaleString()}</b><span class="muted">AOV</span></div>
       <div class="tile"><b>${m.csat_avg === null ? "-" : m.csat_avg}</b><span class="muted">CSAT</span></div>`;
-    const o = await (await fetch(API + "/admin/orders")).json();
+    const o = await (await fetch(API + "/admin/orders", { credentials: "include" })).json();
     document.getElementById("orders").innerHTML = (o.orders || []).slice(0, 20).map((x) => `
-      <div class="card"><b>${x.order_no}</b> <span class="muted">${x.order_status} | [N]${(x.total_kobo / 100).toLocaleString()} | ${x.payment_method}/${x.payment_status}</span>
+      <div class="card"><b>${x.order_no}</b> <span class="muted">${x.order_status} | [N]${(x.total_kobo / 100).toLocaleString()} | ${x.payment_method}/${x.payment_status}${x.rider_id ? " | rider " + x.rider_id : ""}</span>
       <div class="row">${x.order_status !== "cancelled" && x.order_status !== "delivered" ? `<button class="small red" onclick="cancelOrder('${x.id}')">Cancel</button>` : ""}</div></div>`).join("") || "<p class='muted'>No orders.</p>";
-    const pr = await (await fetch(API + "/admin/promos")).json();
+    const live = (o.orders || []).filter((x) => x.rider_id && !["delivered", "cancelled"].includes(x.order_status));
+    document.getElementById("live").innerHTML = live.map((x) => `
+      <div class="card"><b>${x.order_no}</b> <span class="muted">rider ${x.rider_id} • ${x.order_status.replace(/_/g, " ")} • ETA ~${x.eta_min || 30} min</span>
+      <div class="muted">${(x.timeline || []).map((t) => t.status).join(" > ")}</div></div>`).join("") || "<p class='muted'>No active deliveries.</p>";
+    const pr = await (await fetch(API + "/admin/promos", { credentials: "include" })).json();
     document.getElementById("promos").innerHTML = (pr.promos || []).map((p) => `<div class="card"><b>${p.id}</b> <span class="muted">${p.scope} | ${p.promo_type} | ${JSON.stringify(p.rules)}</span></div>`).join("") || "<p class='muted'>No promos.</p>";
-    const rl = await (await fetch(API + "/admin/riders")).json();
+    const rl = await (await fetch(API + "/admin/riders", { credentials: "include" })).json();
     document.getElementById("riders").innerHTML = (rl.riders || []).map((r) => `
       <div class="card"><b>${r.id}</b> <span class="muted">${r.name || ""} • ${r.phone || ""} • ${r.approval}</span>
       ${r.approval !== "approved" ? `<div class="row"><button class="small green" onclick="approveRider('${r.id}')">Approve</button></div>` : ""}</div>`).join("") || "<p class='muted'>No riders.</p>";
@@ -66,7 +84,7 @@ async function approveRider(id) { await api("POST", `/rider/${id}/approve`); loa
 async function restStatus(id, status) { await api("POST", `/admin/restaurants/${id}/status`, { status }); loadAll(); }
 async function cancelOrder(id) {
   if (!confirm("Cancel " + id + "?")) return;
-  await fetch(API + "/orders/" + id + "/status", { method: "PATCH", headers: { "Content-Type": "application/json", "x-role": "admin" }, body: JSON.stringify({ to: "cancelled" }) });
+  await fetch(API + "/orders/" + id + "/status", { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json", "x-role": "admin" }, body: JSON.stringify({ to: "cancelled" }) });
   loadAll();
 }
 async function doRefund() {

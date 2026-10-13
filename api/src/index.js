@@ -362,6 +362,10 @@ http.createServer(async (req, res) => {
     const r = gps.ping(b);
     return r.error ? json(res, 400, r) : json(res, 200, r);
   }
+  if (u.pathname === "/admin/notifications") {
+    if (!await requirePerm(req, res, "metrics")) return;
+    return json(res, 200, { notifications: notify.log.slice(-50).reverse() });
+  }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   if (u.pathname === "/support/chat" && req.method === "POST") {
     const b = await body(req);

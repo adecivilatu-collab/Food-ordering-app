@@ -26,6 +26,7 @@ h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
 <h2>Marketplace health</h2><div class="tiles" id="metrics"></div>
 <h2>Orders</h2><div id="orders"></div>
 <h2>Riders (approvals)</h2><div id="riders"></div>
+<h2>Notifications (latest)</h2><div id="notifs"></div>
 <h2>Live deliveries (rider tracking)</h2><div id="live"></div>
 <h2>Restaurants (approve/suspend)</h2><div id="rests"></div>
 <h2>Refunds</h2>
@@ -79,6 +80,8 @@ async function loadAll() {
     document.getElementById("riders").innerHTML = (rl.riders || []).map((r) => `
       <div class="card"><b>${r.id}</b> <span class="muted">${r.name || ""} • ${r.phone || ""} • ${r.approval}</span>
       ${r.approval !== "approved" ? `<div class="row"><button class="small green" onclick="approveRider('${r.id}')">Approve</button></div>` : ""}</div>`).join("") || "<p class='muted'>No riders.</p>";
+    const nt = await (await fetch(API + "/admin/notifications", { credentials: "include" })).json();
+    document.getElementById("notifs").innerHTML = ((nt.notifications || []).slice(0, 10).map((n) => `<div class="card"><b>${n.event}</b> <span class="muted">${n.order_id} | ${(n.channels || []).join(",")} | ${n.at}</span><div>${n.text}</div></div>`).join("")) || "<p class='muted'>None yet.</p>";
     const rs = await (await fetch(API + "/restaurants")).json();
     document.getElementById("rests").innerHTML = (rs.restaurants || []).map((r) => `
       <div class="card"><b>${r.name}</b> <span class="muted">${r.status || "pending"}</span>

@@ -7,6 +7,7 @@ const cart = require("./modules/cart-orders/cart");
 const orders = require("./modules/cart-orders/orders");
 const status = require("./modules/delivery/status");
 const rider = require("./modules/delivery/rider");
+const gps = require("./modules/delivery/gps");
 const admin = require("./modules/admin");
 const engage = require("./modules/engagement");
 const paystack = require("./modules/payments/paystack");
@@ -256,7 +257,7 @@ http.createServer(async (req, res) => {
   if (u.pathname.startsWith("/track/")) {
     const o = await orders.get(u.pathname.slice(7));
     if (!o) return json(res, 404, { error: "not found" });
-    return json(res, 200, { order_no: o.order_no, status: o.order_status, eta_min: o.eta_min || 30, rider_id: o.rider_id || null, timeline: o.timeline, scheduled_for: o.scheduled_for || null, payment_method: o.payment_method, payment_status: o.payment_status, total_kobo: o.total_kobo });
+    return json(res, 200, { order_no: o.order_no, status: o.order_status, eta_min: o.eta_min || 30, rider_id: o.rider_id || null, rider_gps: o.rider_id ? gps.latest(o.rider_id) : null, timeline: o.timeline, scheduled_for: o.scheduled_for || null, payment_method: o.payment_method, payment_status: o.payment_status, total_kobo: o.total_kobo });
   }
   if (u.pathname === "/admin/riders") {
     if (!await requirePerm(req, res, "riders")) return;
@@ -353,6 +354,13 @@ http.createServer(async (req, res) => {
     if (!["approved", "suspended", "pending"].includes(b.status)) return json(res, 400, { error: "bad status" });
     r.status = b.status;
     return json(res, 200, r);
+  }
+  if (u.pathname === "/rider/ping" && req.method === "POST") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
+    const b = await body(req);
+    const r = gps.ping(b);
+    return r.error ? json(res, 400, r) : json(res, 200, r);
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   if (u.pathname === "/support/chat" && req.method === "POST") {

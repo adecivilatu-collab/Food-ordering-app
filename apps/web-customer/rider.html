@@ -26,6 +26,7 @@ h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
 <div class="row"><input id="rname" placeholder="Name"><input id="rphone" placeholder="Phone"><button class="small green" onclick="register()">Register</button></div><div id="gmsg" class="muted"></div></div>
 <div id="app" style="display:none">
 <div class="earn" id="earn">-</div>
+<div class="card"><b>GPS sharing</b> <span class="muted" id="gpsstate">off</span><div class="row"><button class="small green" onclick="gpsToggle()">Share my location</button></div></div>
 <h2>Available requests</h2><div id="reqs"></div>
 <h2>My active delivery</h2><div id="active"></div>
 </div>
@@ -74,6 +75,18 @@ async function refresh() {
 }
 async function accept(id) { await api("POST", `/orders/${id}/assign`, { rider_id: me() }); refresh(); }
 async function advance(id, to) { await api("PATCH", `/orders/${id}/status`, { to }, R); refresh(); }
+let GPS_TIMER = null;
+function gpsToggle() {
+  if (GPS_TIMER) { clearInterval(GPS_TIMER); GPS_TIMER = null; document.getElementById("gpsstate").textContent = "off"; return; }
+  if (!navigator.geolocation) { document.getElementById("gpsstate").textContent = "no GPS on this device"; return; }
+  document.getElementById("gpsstate").textContent = "sharing...";
+  const send = () => navigator.geolocation.getCurrentPosition(
+    (pos) => api("POST", "/rider/ping", { rider_id: me(), lat: pos.coords.latitude, lng: pos.coords.longitude }).then(() => { document.getElementById("gpsstate").textContent = "live " + new Date().toLocaleTimeString(); }).catch(() => {}),
+    () => { document.getElementById("gpsstate").textContent = "permission denied"; }
+  );
+  send();
+  GPS_TIMER = setInterval(send, 30000);
+}
 if (me()) refresh();
 setInterval(() => { if (me()) refresh(); }, 20000);
 </script>

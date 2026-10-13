@@ -179,6 +179,7 @@ http.createServer(async (req, res) => {
     if (!o) return json(res, 404, { error: "not found" });
     return json(res, 200, { order_no: o.order_no, status: o.order_status, eta_min: o.eta_min || 30, rider_id: o.rider_id || null, timeline: o.timeline, scheduled_for: o.scheduled_for || null });
   }
+  if (u.pathname === "/admin/riders") return json(res, 200, { riders: rider.list() });
   if (u.pathname === "/admin/orders") return json(res, 200, { orders: await orders.list() });
   if (u.pathname === "/admin/payments") {
     return json(res, 200, { payments: (await orders.list()).map((o) => ({ order_id: o.id, method: o.payment_method, status: o.payment_status, total_kobo: o.total_kobo })) });
@@ -254,6 +255,15 @@ http.createServer(async (req, res) => {
     const csat = revs.length ? (revs.reduce((s, r) => s + (r.restaurant_rating || 0), 0) / revs.length).toFixed(2) : null;
     return json(res, 200, { orders: list.length, delivered: done.length, cancelled: cancelled.length, completion_rate: list.length ? +(done.length / list.length).toFixed(2) : null, aov_kobo: aov, csat_avg: csat, refunds: admin.refunds.length });
   }
+  if (u.pathname.startsWith("/admin/restaurants/") && u.pathname.endsWith("/status") && req.method === "POST") {
+    const r = catalog.detail(u.pathname.split("/")[3]);
+    if (!r) return json(res, 404, { error: "not found" });
+    const b = await body(req);
+    if (!["approved", "suspended", "pending"].includes(b.status)) return json(res, 400, { error: "bad status" });
+    r.status = b.status;
+    return json(res, 200, r);
+  }
+  if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   if (u.pathname === "/support/chat" && req.method === "POST") {
     const b = await body(req);
     const order = b.order_id ? await orders.get(b.order_id) : null;

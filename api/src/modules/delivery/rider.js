@@ -20,4 +20,5 @@ function credit(id, amount_kobo, order_id) {
   r.history.push({ order_id, amount_kobo, at: new Date().toISOString() });
 }
 function get(id) { return riders.get(id) || null; }
-module.exports = { register, approve, credit, get };
+function list() { return [...riders.values()]; }
+module.exports = { register, approve, credit, get, list };

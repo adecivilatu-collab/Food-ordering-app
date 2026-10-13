@@ -24,6 +24,8 @@ h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
 <div class="wrap">
 <h2>Marketplace health</h2><div class="tiles" id="metrics"></div>
 <h2>Orders</h2><div id="orders"></div>
+<h2>Riders (approvals)</h2><div id="riders"></div>
+<h2>Restaurants (approve/suspend)</h2><div id="rests"></div>
 <h2>Refunds</h2>
 <div class="card"><div class="row"><input id="rf_order" placeholder="Order id"><input id="rf_amt" placeholder="Amount kobo" type="number"><input id="rf_reason" placeholder="Reason" style="flex:1"><button class="small red" onclick="doRefund()">Approve refund</button></div><div id="rmsg" class="muted"></div></div>
 <h2>Promos</h2><div id="promos"></div>
@@ -50,8 +52,18 @@ async function loadAll() {
       <div class="row">${x.order_status !== "cancelled" && x.order_status !== "delivered" ? `<button class="small red" onclick="cancelOrder('${x.id}')">Cancel</button>` : ""}</div></div>`).join("") || "<p class='muted'>No orders.</p>";
     const pr = await (await fetch(API + "/admin/promos")).json();
     document.getElementById("promos").innerHTML = (pr.promos || []).map((p) => `<div class="card"><b>${p.id}</b> <span class="muted">${p.scope} | ${p.promo_type} | ${JSON.stringify(p.rules)}</span></div>`).join("") || "<p class='muted'>No promos.</p>";
+    const rl = await (await fetch(API + "/admin/riders")).json();
+    document.getElementById("riders").innerHTML = (rl.riders || []).map((r) => `
+      <div class="card"><b>${r.id}</b> <span class="muted">${r.name || ""} • ${r.phone || ""} • ${r.approval}</span>
+      ${r.approval !== "approved" ? `<div class="row"><button class="small green" onclick="approveRider('${r.id}')">Approve</button></div>` : ""}</div>`).join("") || "<p class='muted'>No riders.</p>";
+    const rs = await (await fetch(API + "/restaurants")).json();
+    document.getElementById("rests").innerHTML = (rs.restaurants || []).map((r) => `
+      <div class="card"><b>${r.name}</b> <span class="muted">${r.status || "pending"}</span>
+      <div class="row"><button class="small green" onclick="restStatus('${r.id}','approved')">Approve</button><button class="small red" onclick="restStatus('${r.id}','suspended')">Suspend</button></div></div>`).join("");
   } catch { document.getElementById("metrics").innerHTML = "<p>API offline — start it first.</p>"; }
 }
+async function approveRider(id) { await api("POST", `/rider/${id}/approve`); loadAll(); }
+async function restStatus(id, status) { await api("POST", `/admin/restaurants/${id}/status`, { status }); loadAll(); }
 async function cancelOrder(id) {
   if (!confirm("Cancel " + id + "?")) return;
   await fetch(API + "/orders/" + id + "/status", { method: "PATCH", headers: { "Content-Type": "application/json", "x-role": "admin" }, body: JSON.stringify({ to: "cancelled" }) });

@@ -1,0 +1,22 @@
+# Render blueprint: API + Postgres (free tiers). Attach env secrets in dashboard after first deploy.
+services:
+  - type: web
+    name: foodiebator-api
+    runtime: node
+    plan: free
+    buildCommand: npm install --no-audit --no-fund
+    startCommand: npm start --workspace api
+    envVars:
+      - key: NODE_VERSION
+        value: 20.20.2
+      - key: DATABASE_URL
+        fromDatabase:
+          name: foodiebator-db
+          property: connectionString
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        value: https://foodiebator-api.onrender.com
+databases:
+  - name: foodiebator-db
+    plan: free

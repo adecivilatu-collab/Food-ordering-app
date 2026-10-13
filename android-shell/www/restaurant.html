@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Restaurant Menu</title>
-<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<link rel="stylesheet" href="assets/tokens.css">
 <style>
 body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
 header{background:var(--color-primary-dark);color:#fff;padding:16px}
@@ -19,19 +19,25 @@ select,input{border:1px solid var(--color-accent);border-radius:var(--radius-md)
 #scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:9}
 #scrim.open{display:block}
 .grab{width:48px;height:5px;border-radius:99px;background:var(--color-accent);margin:0 auto 12px}
+#sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;max-height:75vh;overflow:auto;padding:16px 16px 24px;transform:translateY(100%);transition:transform .3s;box-shadow:0 -4px 24px rgba(0,0,0,.25);z-index:10}
+#sheet.open{transform:none}
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:9}
+#scrim.open{display:block}
+.grab{width:48px;height:5px;border-radius:99px;background:var(--color-accent);margin:0 auto 12px}
 </style>
 </head>
 <body>
-<header><a href="index.html" style="color:var(--color-accent)">← Home</a> <img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 id="name" style="margin:4px 0">Restaurant</h2><div class="muted" id="info" style="color:#eee"></div></header>
-<div class="wrap"><div id="menu"><p class="muted">Loading menu...</p></div></div>
-<div id="bar"><span id="count">Cart: 0 items</span><span><a href="cart.html">Full cart →</a> <button onclick="sheet(true)" style="width:auto;margin-left:8px">View Cart</button></span></div>
+<header><a href="index.html" style="color:var(--color-accent)">< Home</a> <img src="assets/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 id="name" style="margin:4px 0">Restaurant</h2><div class="muted" id="info" style="color:#eee"></div></header>
+<div class="wrap"><div id="menu"><p class="muted">Loading menu...</p></div>
+<h3>Reviews</h3><div id="reviews"><p class="muted">Loading reviews...</p></div></div>
+<div id="bar"><span id="count">Cart: 0 items</span><span><a href="cart.html">Full cart ></a> <button onclick="sheet(true)" style="width:auto;margin-left:8px">View Cart</button></span></div>
 <div id="scrim" onclick="sheet(false)"></div>
 <div id="switchprompt" style="display:none;position:fixed;left:12px;right:12px;bottom:140px;background:#fff;border:2px solid var(--color-accent);border-radius:16px;padding:16px;z-index:30;box-shadow:0 8px 28px rgba(0,0,0,.3)">
 <b>Start a new cart here?</b><p class="muted" id="switchtext" style="margin:6px 0"></p>
 <button onclick="doSwitch()" style="width:auto">Switch (items saved)</button>
 <button onclick="hideSwitch()" style="width:auto;background:var(--color-muted)">Keep old cart</button>
 </div>
-<div id="sheet"><div class="grab"></div><h3 style="margin-top:0">Your cart</h3><div id="lines"></div><button onclick="location='cart.html'">Checkout →</button> <button onclick="sheet(false)" style="background:var(--color-muted)">Close</button></div>
+<div id="sheet"><div class="grab"></div><h3 style="margin-top:0">Your cart</h3><div id="lines"></div><button onclick="location='cart.html'">Checkout ></button> <button onclick="sheet(false)" style="background:var(--color-muted)">Close</button></div>
 <script>
 const API = localStorage.getItem("apiBase") || "http://localhost:4000";
 const id = new URLSearchParams(location.search).get("id") || "r1";
@@ -40,12 +46,16 @@ if (!SESSION) { fetch(API + "/guest/session").then((r) => r.json()).then((j) => 
 async function load() {
   const r = await (await fetch(API + "/r/" + id)).json();
   document.getElementById("name").textContent = r.name;
-  document.getElementById("info").textContent = `${r.area || "Lagos"} • ${r.cuisines.join(" • ")} • ★ ${r.rating} (${r.reviews}) • ${r.eta_min} min`;
+  document.getElementById("info").textContent = `${r.area || "Lagos"} | ${r.cuisines.join(" | ")} | * ${r.rating} (${r.reviews}) | ${r.eta_min} min`;
   const m = await (await fetch(API + "/r/" + id + "/menu")).json();
   document.getElementById("menu").innerHTML = m.menu.map((f) => `
-    <div class="item"><div><b>${f.name}</b><div class="price">₦${(f.price_kobo / 100).toLocaleString()}</div>
-    ${f.options ? f.options.map((o) => `<select data-f="${f.id}" data-t="${o.type}">${o.choices.map((c) => `<option>${c.name}${c.delta_kobo ? " (+₦" + (c.delta_kobo / 100).toLocaleString() + ")" : ""}</option>`).join("")}</select>`).join("") : ""}</div>
+    <div class="item"><div><b>${f.name}</b><div class="price">[N]${(f.price_kobo / 100).toLocaleString()}</div>
+    ${f.options ? f.options.map((o) => `<select data-f="${f.id}" data-t="${o.type}">${o.choices.map((c) => `<option>${c.name}${c.delta_kobo ? " (+[N]" + (c.delta_kobo / 100).toLocaleString() + ")" : ""}</option>`).join("")}</select>`).join("") : ""}</div>
     <button onclick="add('${f.id}')">Add +</button></div>`).join("");
+  try {
+    const rv = await (await fetch(API + "/r/" + id + "/reviews")).json();
+    document.getElementById("reviews").innerHTML = (rv.reviews || []).filter((x) => x.moderation === "approved").map((x) => `<p><b>*${x.restaurant_rating} Food ${x.food_rating} Rider ${x.delivery_rating}</b> - ${x.text || ""}</p>`).join("") || "<p class='muted'>No reviews yet - be the first after delivery.</p>";
+  } catch { document.getElementById("reviews").innerHTML = ""; }
   refresh();
 }
 let PENDING_ADD = null;
@@ -56,7 +66,7 @@ async function add(item_id) {
   if (r.error && r.cart) {
     PENDING_ADD = { item_id, options };
     const n = r.cart.lines.reduce((s, l) => s + l.qty, 0);
-    document.getElementById("switchtext").textContent = `Your cart has ${n} item(s) from another restaurant — kept safe. Switch to order here?`;
+    document.getElementById("switchtext").textContent = `Your cart has ${n} item(s) from another restaurant - kept safe. Switch to order here?`;
     document.getElementById("switchprompt").style.display = "block";
     return;
   }
@@ -73,8 +83,8 @@ async function refresh() {
   if (!SESSION) return;
   const c = await (await fetch(API + "/cart?session=" + SESSION)).json();
   const n = c.lines.reduce((s, l) => s + l.qty, 0);
-  document.getElementById("count").textContent = `Cart: ${n} items • ₦${((c.subtotal_kobo || 0) / 100).toLocaleString()}`;
-  document.getElementById("lines").innerHTML = c.lines.map((l) => `<p><b>${l.name} × ${l.qty}</b> — ₦${(l.line_kobo / 100).toLocaleString()}</p>`).join("") || "<p>Empty.</p>";
+  document.getElementById("count").textContent = `Cart: ${n} items | [N]${((c.subtotal_kobo || 0) / 100).toLocaleString()}`;
+  document.getElementById("lines").innerHTML = c.lines.map((l) => `<p><b>${l.name} x ${l.qty}</b> - [N]${(l.line_kobo / 100).toLocaleString()}</p>`).join("") || "<p>Empty.</p>";
 }
 function sheet(open) {
   document.getElementById("sheet").classList.toggle("open", open);
@@ -106,11 +116,48 @@ async function chatSend() {
   try {
     const r = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
     document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
-  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline — start it first.</span></div>`; }
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline - start it first.</span></div>`; }
   log.scrollTop = log.scrollHeight;
 }
 function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && document.activeElement && document.activeElement.id === "chatq") chatSend(); });
+</script>
+<style>
+#bellbtn{position:fixed;bottom:140px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--color-primary-dark);color:#fff;border:0;font-size:24px;z-index:20;cursor:pointer}
+#bellbadge{position:fixed;bottom:182px;right:16px;background:var(--color-danger);color:#fff;border-radius:999px;min-width:22px;height:22px;font-size:12px;font-weight:800;display:none;z-index:21;text-align:center;line-height:22px}
+#toasts{position:fixed;top:12px;left:12px;right:12px;z-index:40}
+.toast{background:var(--color-primary-dark);color:#fff;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+</style>
+<button id="bellbtn" onclick="location='track.html' + (localStorage.getItem('lastOrderId') ? '?id=' + localStorage.getItem('lastOrderId') : '')">!</button>
+<div id="bellbadge"></div>
+<div id="toasts"></div>
+<script>
+let LAST_STATUS = localStorage.getItem("lastOrderStatus") || "";
+let UNREAD = 0;
+async function pollOrder() {
+  const id = localStorage.getItem("lastOrderId");
+  if (!id) return;
+  try {
+    const t = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/track/" + id)).json();
+    if (t.status && t.status !== LAST_STATUS) {
+      if (LAST_STATUS) {
+        UNREAD++;
+        const b = document.getElementById("bellbadge");
+        b.style.display = "block"; b.textContent = UNREAD;
+        const d = document.createElement("div");
+        d.className = "toast";
+        d.textContent = t.order_no + ": " + t.status.replace(/_/g, " ");
+        document.getElementById("toasts").appendChild(d);
+        setTimeout(() => d.remove(), 6000);
+      }
+      LAST_STATUS = t.status;
+      localStorage.setItem("lastOrderStatus", t.status);
+    }
+  } catch {}
+}
+document.getElementById("bellbtn").addEventListener("click", () => { UNREAD = 0; document.getElementById("bellbadge").style.display = "none"; });
+setInterval(pollOrder, 15000);
+pollOrder();
 </script>
 </body>
 </html>

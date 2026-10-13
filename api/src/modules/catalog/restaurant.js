@@ -16,6 +16,12 @@ function setAvailability(id, available) {
   it.available = available !== false;
   return { item: it };
 }
+function setPhoto(id, photo) {
+  const it = menuData.menu.find((m) => m.id === id);
+  if (!it) return { error: "not found" };
+  it.photo = photo || "";
+  return { item: it };
+}
 function setPrice(id, price_kobo) {
   const it = menuData.menu.find((m) => m.id === id);
   if (!it) return { error: "not found" };
@@ -31,4 +37,4 @@ function createPromo({ scope, promo_type, rules }) {
   promos.push(p);
   return { promo: p };
 }
-module.exports = { addItem, setAvailability, setPrice, setHours, createPromo, promos, hours };
+module.exports = { addItem, setAvailability, setPrice, setPhoto, setHours, createPromo, promos, hours };

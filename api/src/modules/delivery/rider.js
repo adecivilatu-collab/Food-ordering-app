@@ -1,9 +1,9 @@
 // Rider module — register, approve, requests, earnings (MVP manual accept).
 const riders = new Map();
 let seq = 0;
-function register({ name, phone, vehicle }) {
+function register({ name, phone, vehicle, user_id }) {
   const id = "rider" + (++seq);
-  const r = { id, name, phone, vehicle, approval: "pending", earnings_kobo: 0, history: [] };
+  const r = { id, name, phone, vehicle, user_id: user_id || null, approval: "pending", earnings_kobo: 0, history: [] };
   riders.set(id, r);
   return { rider: r };
 }
@@ -20,4 +20,5 @@ function credit(id, amount_kobo, order_id) {
   r.history.push({ order_id, amount_kobo, at: new Date().toISOString() });
 }
 function get(id) { return riders.get(id) || null; }
-module.exports = { register, approve, credit, get };
+function list() { return [...riders.values()]; }
+module.exports = { register, approve, credit, get, list };

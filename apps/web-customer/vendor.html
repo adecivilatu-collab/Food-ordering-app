@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vendor Dashboard — Foodiebator</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px}
+.wrap{max-width:900px;margin:auto;padding:16px}
+.card{background:#fff;border:1px solid var(--color-accent);border-radius:12px;padding:12px;margin:10px 0}
+.muted{color:var(--color-muted);font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select{border:1px solid var(--color-accent);border-radius:8px;padding:10px;font-size:15px;min-height:44px;margin:4px 0}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:8px;padding:10px 14px;min-height:44px;font-weight:700;cursor:pointer}
+button.small{width:auto;padding:8px 12px;min-height:36px}
+button.green{background:var(--color-success)}button.grey{background:var(--color-muted)}button.dark{background:var(--color-primary-dark)}
+h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
+.new{border-left:6px solid var(--color-danger)}
+.late{color:var(--color-danger);font-weight:800}
+.tiles{display:flex;gap:10px}.tile{flex:1;background:#fff;border:1px solid var(--color-accent);border-radius:12px;padding:10px;text-align:center}.tile b{font-size:22px;display:block}
+.nophoto{background:var(--color-muted);color:#fff;border-radius:8px;padding:2px 8px;font-size:12px}
+</style>
+</head>
+<body>
+<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"> <b>Vendor Dashboard</b><div class="row"><select id="rest"></select><button class="small dark" onclick="loadAll()">Refresh</button></div></header>
+<div class="wrap">
+<div class="row" id="stats"></div>
+<h2>Incoming orders</h2><div id="orders"><p class="muted">Pick your restaurant.</p></div>
+<h2>Menu</h2><div id="menu"></div>
+<div class="card"><b>Add item</b><div class="row"><input id="ni_name" placeholder="Name"><input id="ni_price" placeholder="Price ₦" type="number"><button class="small green" onclick="addItem()">Add</button></div></div>
+<h2>Hours & promos</h2>
+<div class="card"><div class="row"><input id="hours" placeholder='e.g. {"mon":"9-21"}' style="flex:1"><button class="small" onclick="setHours()">Save hours</button></div>
+<div class="row"><input id="promo_type" placeholder="percent" style="width:120px"><input id="promo_val" placeholder="value e.g. 10" type="number" style="width:140px"><button class="small" onclick="addPromo()">New promo</button></div><div id="msg" class="muted"></div></div>
+</div>
+<script>
+const API = localStorage.getItem("apiBase") || "http://localhost:4000";
+const R = "restaurant";
+async function api(m, p, b, role) {
+  const h = { "Content-Type": "application/json" };
+  if (role) h["x-role"] = role;
+  const r = await fetch(API + p, { method: m, credentials: "include", headers: h, body: b ? JSON.stringify(b) : undefined });
+  if (r.status === 401) { location = "../web-customer/login.html"; throw new Error("login"); }
+  return r.json();
+}
+function rid() { return document.getElementById("rest").value; }
+async function loadAll() {
+  const rs = await (await fetch(API + "/restaurants")).json();
+  const sel = document.getElementById("rest");
+  sel.innerHTML = rs.restaurants.map((r) => `<option value="${r.id}">${r.name}</option>`).join("");
+  await loadOrders(); await loadMenu();
+}
+let KNOWN = new Set();
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.15;
+    o.start(); o.stop(ctx.currentTime + 0.4);
+  } catch {}
+}
+function ageMin(created) { return Math.floor((Date.now() - new Date(created).getTime()) / 60000); }
+async function loadOrders() {
+  const all = await (await fetch(API + "/admin/orders")).json();
+  const mine = (all.orders || []).filter((o) => o.restaurant_id === rid());
+  const fresh = mine.filter((o) => o.order_status === "received" && !KNOWN.has(o.id));
+  if (KNOWN.size && fresh.length) beep();
+  mine.forEach((o) => KNOWN.add(o.id));
+  const today = new Date().toDateString();
+  const todays = mine.filter((o) => new Date(o.created_at).toDateString() === today);
+  const rev = todays.filter((o) => o.order_status !== "cancelled").reduce((s, o) => s + o.total_kobo, 0);
+  document.getElementById("stats").innerHTML = `
+    <div class="tiles"><div class="tile"><b>${todays.length}</b><span class="muted">Today</span></div>
+    <div class="tile"><b>₦${(rev / 100).toLocaleString()}</b><span class="muted">Revenue</span></div>
+    <div class="tile"><b>${mine.filter((o) => o.order_status === "received").length}</b><span class="muted">Waiting</span></div></div>`;
+  const flow = { received: ["accepted"], accepted: ["preparing"], preparing: ["ready"] };
+  document.getElementById("orders").innerHTML = mine.map((o) => {
+    const age = ageMin(o.created_at);
+    const late = o.order_status === "received" && age >= 5;
+    return `
+    <div class="card${o.order_status === "received" ? " new" : ""}"><b>${o.order_no}</b> <span class="muted">${o.order_status} • ₦${(o.total_kobo / 100).toLocaleString()} • ${o.contact ? o.contact.phone : ""}${o.scheduled_for ? " • Scheduled " + new Date(o.scheduled_for).toLocaleString() : ""}</span>
+    <div class="${late ? "late" : "muted"}">Waiting ${age} min${late ? " — URGENT" : ""}</div>
+    <div class="muted">${o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}</div>
+    <div class="row">${(flow[o.order_status] || []).map((t) => `<button class="small green" onclick="setStatus('${o.id}','${t}')">${t}</button>`).join("")}
+    ${o.order_status === "received" ? `<button class="small" style="background:var(--color-danger)" onclick="rejectOrder('${o.id}')">Reject</button>` : ""}
+    ${["accepted", "preparing"].includes(o.order_status) ? [5, 10, 15].map((m) => `<button class="small dark" onclick="addPrep('${o.id}',${m})">+${m} min</button>`).join("") : ""}</div></div>`;
+  }).join("") || "<p class='muted'>No orders yet.</p>";
+}
+async function rejectOrder(id) {
+  const reason = prompt("Reject reason (out of item / closed / too busy):", "out of item");
+  if (reason === null) return;
+  await api("PATCH", `/orders/${id}/status`, { to: "cancelled" }, R);
+  notify(`Rejected: ${reason}`);
+  loadOrders();
+}
+async function addPrep(id, add_min) {
+  await api("POST", `/orders/${id}/prep`, { add_min });
+  loadOrders();
+}
+function notify(msg) { document.getElementById("msg").textContent = msg; }
+setInterval(() => { if (document.getElementById("rest").value) loadOrders(); }, 20000);
+async function setStatus(id, to) { await api("PATCH", `/orders/${id}/status`, { to }, R); loadOrders(); }
+async function loadMenu() {
+  const m = await (await fetch(API + "/r/" + rid() + "/menu")).json();
+  document.getElementById("menu").innerHTML = m.menu.map((f) => `
+    <div class="card"><div class="row"><b style="flex:1">${f.name} — ₦${(f.price_kobo / 100).toLocaleString()} ${f.available ? "" : "(off)"} ${f.photo ? "" : '<span class="nophoto">No photo</span>'}</b>
+    <button class="small ${f.available ? "grey" : "green"}" onclick="toggleAvail('${f.id}',${!f.available})">${f.available ? "Hide" : "Show"}</button></div>
+    <div class="row"><input id="p_${f.id}" placeholder="New price ₦" type="number" style="width:130px"><button class="small" onclick="setPrice('${f.id}')">Set price</button></div>
+    <div class="row"><input id="img_${f.id}" placeholder="Photo URL" style="flex:1" value="${f.photo || ""}"><button class="small" onclick="setPhoto('${f.id}')">Set photo</button></div></div>`).join("");
+}
+async function setPhoto(id) {
+  await api("PATCH", `/restaurant/menu/${id}`, { photo: document.getElementById("img_" + id).value.trim() }); loadMenu();
+}
+async function toggleAvail(id, v) { await api("PATCH", `/restaurant/menu/${id}`, { available: v }); loadMenu(); }
+async function setPrice(id) {
+  const v = Number(document.getElementById("p_" + id).value) * 100;
+  if (!v) return;
+  await api("PATCH", `/restaurant/menu/${id}`, { price_kobo: v }); loadMenu();
+}
+async function addItem() {
+  const name = document.getElementById("ni_name").value.trim();
+  const price_kobo = Number(document.getElementById("ni_price").value) * 100;
+  if (!name || !price_kobo) return;
+  await api("POST", "/restaurant/menu", { restaurant_id: rid(), name, price_kobo }); loadMenu();
+}
+async function setHours() {
+  try {
+    await api("PUT", "/restaurant/hours", { restaurant_id: rid(), open_hours: JSON.parse(document.getElementById("hours").value || "{}") });
+    document.getElementById("msg").textContent = "Hours saved.";
+  } catch { document.getElementById("msg").textContent = "Hours must be valid JSON."; }
+}
+async function addPromo() {
+  await api("POST", "/restaurant/promos", { scope: "restaurant", promo_type: document.getElementById("promo_type").value || "percent", rules: { value: Number(document.getElementById("promo_val").value) || 0 } });
+  document.getElementById("msg").textContent = "Promo created.";
+}
+document.getElementById("rest").addEventListener("change", () => { loadOrders(); loadMenu(); });
+loadAll().catch(() => { document.getElementById("orders").innerHTML = "<p>API offline — start it first.</p>"; });
+</script>
+</body>
+</html>

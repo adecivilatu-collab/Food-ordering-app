@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Console — Foodiebator</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px}
+.wrap{max-width:960px;margin:auto;padding:16px}
+.card{background:#fff;border:1px solid var(--color-accent);border-radius:12px;padding:12px;margin:10px 0}
+.muted{color:var(--color-muted);font-size:14px}
+.tiles{display:flex;gap:10px;flex-wrap:wrap}.tile{flex:1;min-width:120px;background:#fff;border:1px solid var(--color-accent);border-radius:12px;padding:10px;text-align:center}.tile b{font-size:20px;display:block}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input{border:1px solid var(--color-accent);border-radius:8px;padding:10px;font-size:15px;min-height:44px;margin:4px 0}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:8px;padding:10px 14px;min-height:44px;font-weight:700;cursor:pointer}
+button.small{width:auto;padding:8px 12px;min-height:36px}
+button.red{background:var(--color-danger)}button.dark{background:var(--color-primary-dark)}
+h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
+</style>
+</head>
+<body>
+<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"> <b>Admin Console</b> <span id="who" class="muted"></span> <button class="small dark" style="float:right" onclick="loadAll()">Refresh</button></header>
+<div class="wrap">
+<div class="card" id="loginbox"><b>Admin sign in</b><div class="row"><input id="lemail" placeholder="Email" type="email" style="flex:1"><input id="lpass" placeholder="Password" type="password" style="flex:1"><button class="small" onclick="login()">Sign in</button><button class="small grey" onclick="logout()">Sign out</button></div><div id="lmsg" class="muted"></div></div>
+<h2>Marketplace health</h2><div class="tiles" id="metrics"></div>
+<h2>Orders</h2><div id="orders"></div>
+<h2>Riders (approvals)</h2><div id="riders"></div>
+<h2>Live deliveries (rider tracking)</h2><div id="live"></div>
+<h2>Restaurants (approve/suspend)</h2><div id="rests"></div>
+<h2>Refunds</h2>
+<div class="card"><div class="row"><input id="rf_order" placeholder="Order id"><input id="rf_amt" placeholder="Amount kobo" type="number"><input id="rf_reason" placeholder="Reason" style="flex:1"><button class="small red" onclick="doRefund()">Approve refund</button></div><div id="rmsg" class="muted"></div></div>
+<h2>Promos</h2><div id="promos"></div>
+</div>
+<script>
+const API = localStorage.getItem("apiBase") || "http://localhost:4000";
+async function api(m, p, b) {
+  const r = await fetch(API + p, { method: m, credentials: "include", headers: { "Content-Type": "application/json" }, body: b ? JSON.stringify(b) : undefined });
+  return r.json();
+}
+async function login() {
+  const r = await fetch(API + "/api/auth/sign-in/email", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("lemail").value, password: document.getElementById("lpass").value }) });
+  const j = await r.json();
+  document.getElementById("lmsg").textContent = j.user ? ("Signed in as " + j.user.email + " (" + (j.user.role || "?") + ")") : ("Failed: " + JSON.stringify(j).slice(0, 120));
+  loadAll();
+}
+async function logout() {
+  await fetch(API + "/api/auth/sign-out", { method: "POST", credentials: "include" });
+  document.getElementById("lmsg").textContent = "Signed out.";
+  loadAll();
+}
+async function loadAll() {
+  try {
+    const m = await (await fetch(API + "/admin/metrics", { credentials: "include" })).json();
+    if (m.error) { document.getElementById("metrics").innerHTML = "<p>Sign in as admin to view (" + m.error + ").</p>"; return; }
+    document.getElementById("metrics").innerHTML = `
+      <div class="tile"><b>${m.orders}</b><span class="muted">Orders</span></div>
+      <div class="tile"><b>${m.delivered}</b><span class="muted">Delivered</span></div>
+      <div class="tile"><b>${m.cancelled}</b><span class="muted">Cancelled</span></div>
+      <div class="tile"><b>${m.completion_rate === null ? "-" : m.completion_rate}</b><span class="muted">Completion</span></div>
+      <div class="tile"><b>[N]${(m.aov_kobo / 100).toLocaleString()}</b><span class="muted">AOV</span></div>
+      <div class="tile"><b>${m.csat_avg === null ? "-" : m.csat_avg}</b><span class="muted">CSAT</span></div>`;
+    const o = await (await fetch(API + "/admin/orders", { credentials: "include" })).json();
+    document.getElementById("orders").innerHTML = (o.orders || []).slice(0, 20).map((x) => `
+      <div class="card"><b>${x.order_no}</b> <span class="muted">${x.order_status} | [N]${(x.total_kobo / 100).toLocaleString()} | ${x.payment_method}/${x.payment_status}${x.rider_id ? " | rider " + x.rider_id : ""}</span>
+      <div class="row">${x.order_status !== "cancelled" && x.order_status !== "delivered" ? `<button class="small red" onclick="cancelOrder('${x.id}')">Cancel</button>` : ""}</div></div>`).join("") || "<p class='muted'>No orders.</p>";
+    const live = (o.orders || []).filter((x) => x.rider_id && !["delivered", "cancelled"].includes(x.order_status));
+    document.getElementById("live").innerHTML = (await Promise.all(live.map(async (x) => {
+      let gps = "";
+      try {
+        const t = await (await fetch(API + "/track/" + x.id)).json();
+        if (t.rider_gps) gps = ` | GPS ${t.rider_gps.lat.toFixed(4)}, ${t.rider_gps.lng.toFixed(4)} (<a href="https://www.openstreetmap.org/?mlat=${t.rider_gps.lat}&mlon=${t.rider_gps.lng}#map=15/${t.rider_gps.lat}/${t.rider_gps.lng}" target="_blank">map</a>)`;
+      } catch {}
+      return `<div class="card"><b>${x.order_no}</b> <span class="muted">rider ${x.rider_id} | ${x.order_status.replace(/_/g, " ")} | ETA ~${x.eta_min || 30} min${gps}</span></div>`;
+    }))).join("") || "<p class='muted'>No active deliveries.</p>";
+    const pr = await (await fetch(API + "/admin/promos", { credentials: "include" })).json();
+    document.getElementById("promos").innerHTML = (pr.promos || []).map((p) => `<div class="card"><b>${p.id}</b> <span class="muted">${p.scope} | ${p.promo_type} | ${JSON.stringify(p.rules)}</span></div>`).join("") || "<p class='muted'>No promos.</p>";
+    const rl = await (await fetch(API + "/admin/riders", { credentials: "include" })).json();
+    document.getElementById("riders").innerHTML = (rl.riders || []).map((r) => `
+      <div class="card"><b>${r.id}</b> <span class="muted">${r.name || ""} • ${r.phone || ""} • ${r.approval}</span>
+      ${r.approval !== "approved" ? `<div class="row"><button class="small green" onclick="approveRider('${r.id}')">Approve</button></div>` : ""}</div>`).join("") || "<p class='muted'>No riders.</p>";
+    const rs = await (await fetch(API + "/restaurants")).json();
+    document.getElementById("rests").innerHTML = (rs.restaurants || []).map((r) => `
+      <div class="card"><b>${r.name}</b> <span class="muted">${r.status || "pending"}</span>
+      <div class="row"><button class="small green" onclick="restStatus('${r.id}','approved')">Approve</button><button class="small red" onclick="restStatus('${r.id}','suspended')">Suspend</button></div></div>`).join("");
+  } catch { document.getElementById("metrics").innerHTML = "<p>API offline — start it first.</p>"; }
+}
+async function approveRider(id) { await api("POST", `/rider/${id}/approve`); loadAll(); }
+async function restStatus(id, status) { await api("POST", `/admin/restaurants/${id}/status`, { status }); loadAll(); }
+async function cancelOrder(id) {
+  if (!confirm("Cancel " + id + "?")) return;
+  await fetch(API + "/orders/" + id + "/status", { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json", "x-role": "admin" }, body: JSON.stringify({ to: "cancelled" }) });
+  loadAll();
+}
+async function doRefund() {
+  const order_id = document.getElementById("rf_order").value.trim();
+  const amount_kobo = Number(document.getElementById("rf_amt").value);
+  const reason = document.getElementById("rf_reason").value.trim();
+  if (!order_id || !amount_kobo) return;
+  const r = await api("POST", "/admin/refunds", { order_id, amount_kobo, reason });
+  document.getElementById("rmsg").textContent = "Refund " + r.refund.id + " approved.";
+}
+loadAll();
+</script>
+</body>
+</html>

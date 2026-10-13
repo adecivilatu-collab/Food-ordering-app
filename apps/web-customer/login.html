@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Foodiebator</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+.wrap{max-width:420px;margin:40px auto;padding:16px}
+.card{background:#fff;border:1px solid var(--color-accent);border-radius:12px;padding:16px}
+input{width:100%;box-sizing:border-box;border:1px solid var(--color-accent);border-radius:8px;padding:12px;min-height:44px;font-size:16px;margin:6px 0}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:8px;padding:12px;min-height:44px;font-size:16px;font-weight:700;width:100%;margin-top:6px}
+.muted{color:var(--color-muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h2>Sign in</h2>
+<input id="email" placeholder="Email" type="email">
+<input id="pass" placeholder="Password" type="password">
+<button onclick="login()">Sign in</button>
+<button onclick="signup()" style="background:#fff;color:var(--color-primary-dark);border:2px solid var(--color-primary-dark)">Create account</button>
+<div id="msg" class="muted"></div>
+</div></div>
+<script>
+const API = localStorage.getItem("apiBase") || "http://localhost:4000";
+async function login() {
+  const r = await fetch(API + "/api/auth/sign-in/email", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("email").value, password: document.getElementById("pass").value }) });
+  const j = await r.json();
+  if (j.user) { document.getElementById("msg").textContent = "Welcome " + (j.user.name || j.user.email); setTimeout(() => history.back(), 800); }
+  else document.getElementById("msg").textContent = "Failed: " + JSON.stringify(j).slice(0, 120);
+}
+async function signup() {
+  const name = prompt("Your name:", "");
+  if (name === null) return;
+  const r = await fetch(API + "/api/auth/sign-up/email", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("email").value, password: document.getElementById("pass").value, name: name || "User" }) });
+  const j = await r.json();
+  document.getElementById("msg").textContent = j.user ? "Account created - signed in." : ("Failed: " + JSON.stringify(j).slice(0, 120));
+  if (j.user) setTimeout(() => history.back(), 800);
+}
+</script>
+</body>
+</html>

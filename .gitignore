@@ -4,6 +4,9 @@ dist/
 build/
 .env
 .env.local
+*.keystore
+*.jks
+android-shell/keystore.properties
 *.log
 .DS_Store
 postgres-data/

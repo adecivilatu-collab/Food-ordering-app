@@ -1,6 +1,7 @@
 // Orders — Postgres-backed with in-memory fallback. Async API.
 const cart = require("./cart");
 const { db } = require("../../db/pool");
+const loyalty = require("../loyalty");
 const mem = new Map();
 const seenKeys = new Map();
 let seq = 1000;
@@ -22,7 +23,7 @@ async function persist(order) {
     } catch {}
   }
 }
-async function checkout({ session, address, contact, payment_method, idempotencyKey, restaurant, scheduled_for }) {
+async function checkout({ session, address, contact, payment_method, idempotencyKey, restaurant, scheduled_for, redeem_points }) {
   if (idempotencyKey && seenKeys.has(idempotencyKey)) {
     return { order: seenKeys.get(idempotencyKey), duplicate: true };
   }
@@ -36,6 +37,9 @@ async function checkout({ session, address, contact, payment_method, idempotency
     scheduled = new Date(t).toISOString();
   }
   const p = price(c, restaurant);
+  const phone = contact && contact.phone;
+  const lq = loyalty.quote(phone, redeem_points);
+  p.discount_kobo += lq.discount_kobo;
   const total = p.subtotal_kobo + p.fee_kobo + p.service_kobo - p.discount_kobo;
   const order = {
     id: "o" + (++seq),
@@ -51,6 +55,9 @@ async function checkout({ session, address, contact, payment_method, idempotency
   };
   await persist(order);
   if (idempotencyKey) seenKeys.set(idempotencyKey, order);
+  if (lq.points_used) loyalty.spend(phone, lq.points_used);
+  order.loyalty_used = lq.points_used;
+  await persist(order);
   await cart.clear(session);
   return { order };
 }

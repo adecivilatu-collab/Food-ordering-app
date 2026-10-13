@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cart & Checkout</title>
-<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<link rel="stylesheet" href="assets/tokens.css">
 <style>
 body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
 header{background:var(--color-primary-dark);color:#fff;padding:16px}
@@ -18,7 +18,7 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 </style>
 </head>
 <body>
-<header><a href="index.html" style="color:var(--color-accent)">← Home</a> <img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 style="margin:4px 0">Cart & Checkout</h2></header>
+<header><a href="index.html" style="color:var(--color-accent)">< Home</a> <img src="assets/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 style="margin:4px 0">Cart & Checkout</h2></header>
 <div class="wrap">
 <div id="cart"></div>
 <h3>Delivery & Payment</h3>
@@ -26,8 +26,9 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 <input id="email" placeholder="Email (for card payment receipt)" type="email">
 <input id="addr" placeholder="Delivery address / label">
 <select id="pay"><option value="card">Card (Paystack test)</option><option value="transfer">Bank Transfer</option><option value="ussd">USSD</option><option value="wallet">Wallet</option><option value="cod">Cash on Delivery</option></select>
-<label style="font-size:14px;color:var(--color-muted)">Schedule for later (optional — offices love this)</label>
+<label style="font-size:14px;color:var(--color-muted)">Schedule for later (optional - offices love this)</label>
 <input id="sched" type="datetime-local">
+<div class="row" style="display:flex;gap:8px;align-items:center"><span id="loyal" class="muted">Loyalty: -</span><input id="redeem" placeholder="Points (100 = [N]500 off)" type="number" style="flex:1"></div>
 <button onclick="checkout()">Confirm Order</button>
 <div id="done"></div>
 </div>
@@ -37,20 +38,29 @@ const SESSION = localStorage.getItem("session");
 async function load() {
   const c = await (await fetch(API + "/cart?session=" + SESSION)).json();
   const fee = 80000, service = Math.round((c.subtotal_kobo || 0) * 0.05);
+  try {
+    const phone = (document.getElementById("phone") && document.getElementById("phone").value) || "";
+    if (phone) {
+      const l = await (await fetch(API + "/loyalty?phone=" + encodeURIComponent(phone))).json();
+      document.getElementById("loyal").textContent = "Loyalty: " + l.points + " pts ([N]" + (l.value_kobo / 100).toLocaleString() + " off)";
+    }
+  } catch {}
   const total = (c.subtotal_kobo || 0) + (c.lines.length ? fee + service : 0);
-  document.getElementById("cart").innerHTML = (c.lines.map((l) => `<div class="row"><b>${l.name} × ${l.qty}</b><div>₦${(l.line_kobo / 100).toLocaleString()}</div></div>`).join("") || "<p>Cart is empty.</p>") +
-    `<div class="fees"><div><span>Subtotal</span><span>₦${((c.subtotal_kobo || 0) / 100).toLocaleString()}</span></div><div><span>Delivery</span><span>₦${c.lines.length ? (fee / 100).toLocaleString() : 0}</span></div><div><span>Service 5%</span><span>₦${c.lines.length ? (service / 100).toLocaleString() : 0}</span></div><div class="total"><span>Total</span><span>₦${(total / 100).toLocaleString()}</span></div></div>`;
+  document.getElementById("cart").innerHTML = (c.lines.map((l) => `<div class="row"><b>${l.name} x ${l.qty}</b><div>[N]${(l.line_kobo / 100).toLocaleString()}</div></div>`).join("") || "<p>Cart is empty.</p>") +
+    `<div class="fees"><div><span>Subtotal</span><span>[N]${((c.subtotal_kobo || 0) / 100).toLocaleString()}</span></div><div><span>Delivery</span><span>[N]${c.lines.length ? (fee / 100).toLocaleString() : 0}</span></div><div><span>Service 5%</span><span>[N]${c.lines.length ? (service / 100).toLocaleString() : 0}</span></div><div class="total"><span>Total</span><span>[N]${(total / 100).toLocaleString()}</span></div></div>`;
 }
 async function checkout() {
   const schedVal = document.getElementById("sched").value;
-  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value, email: document.getElementById("email").value || "" }, payment_method: document.getElementById("pay").value, scheduled_for: schedVal ? new Date(schedVal).toISOString() : undefined }) })).json();
+  const redeem = Number(document.getElementById("redeem").value) || 0;
+  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value, email: document.getElementById("email").value || "" }, payment_method: document.getElementById("pay").value, scheduled_for: schedVal ? new Date(schedVal).toISOString() : undefined, redeem_points: redeem }) })).json();
+  if (r.order && r.order.id) { localStorage.setItem("lastOrderId", r.order.id); localStorage.setItem("lastOrderStatus", r.order.order_status); }
   if (r.error) { document.getElementById("done").innerHTML = `<div class="ok" style="background:var(--color-danger)">${r.error}</div>`; return; }
   let extra = "";
   if (r.order.payment_method !== "cod") {
     const init = await (await fetch(API + "/payments/initialize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: r.order.id, email: document.getElementById("email").value || "" }) })).json();
-    if (init.authorization_url) extra = `<br><a href="${init.authorization_url}" target="_blank" style="color:#fff;font-weight:800">Pay now on Paystack →</a>`;
+    if (init.authorization_url) extra = `<br><a href="${init.authorization_url}" target="_blank" style="color:#fff;font-weight:800">Pay now on Paystack ></a>`;
   }
-  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b>${r.order.scheduled_for ? `<br>Scheduled for ${new Date(r.order.scheduled_for).toLocaleString()}` : ""}<br>Total ₦${(r.order.total_kobo / 100).toLocaleString()} • ${r.order.payment_method.toUpperCase()} • Status: ${r.order.order_status}${extra}<br><a href="track.html?id=${r.order.id}" style="color:#fff;font-weight:800">Track your order →</a></div>`;
+  document.getElementById("done").innerHTML = `<div class="ok"><b>Order ${r.order.order_no} confirmed!</b>${r.order.scheduled_for ? `<br>Scheduled for ${new Date(r.order.scheduled_for).toLocaleString()}` : ""}<br>Total [N]${(r.order.total_kobo / 100).toLocaleString()} | ${r.order.payment_method.toUpperCase()} | Status: ${r.order.order_status}${extra}<br><a href="track.html?id=${r.order.id}" style="color:#fff;font-weight:800">Track your order ></a></div>`;
   load();
 }
 load();
@@ -78,11 +88,48 @@ async function chatSend() {
   try {
     const r = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
     document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
-  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline — start it first.</span></div>`; }
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline - start it first.</span></div>`; }
   log.scrollTop = log.scrollHeight;
 }
 function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && document.activeElement && document.activeElement.id === "chatq") chatSend(); });
+</script>
+<style>
+#bellbtn{position:fixed;bottom:140px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--color-primary-dark);color:#fff;border:0;font-size:24px;z-index:20;cursor:pointer}
+#bellbadge{position:fixed;bottom:182px;right:16px;background:var(--color-danger);color:#fff;border-radius:999px;min-width:22px;height:22px;font-size:12px;font-weight:800;display:none;z-index:21;text-align:center;line-height:22px}
+#toasts{position:fixed;top:12px;left:12px;right:12px;z-index:40}
+.toast{background:var(--color-primary-dark);color:#fff;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+</style>
+<button id="bellbtn" onclick="location='track.html' + (localStorage.getItem('lastOrderId') ? '?id=' + localStorage.getItem('lastOrderId') : '')">!</button>
+<div id="bellbadge"></div>
+<div id="toasts"></div>
+<script>
+let LAST_STATUS = localStorage.getItem("lastOrderStatus") || "";
+let UNREAD = 0;
+async function pollOrder() {
+  const id = localStorage.getItem("lastOrderId");
+  if (!id) return;
+  try {
+    const t = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/track/" + id)).json();
+    if (t.status && t.status !== LAST_STATUS) {
+      if (LAST_STATUS) {
+        UNREAD++;
+        const b = document.getElementById("bellbadge");
+        b.style.display = "block"; b.textContent = UNREAD;
+        const d = document.createElement("div");
+        d.className = "toast";
+        d.textContent = t.order_no + ": " + t.status.replace(/_/g, " ");
+        document.getElementById("toasts").appendChild(d);
+        setTimeout(() => d.remove(), 6000);
+      }
+      LAST_STATUS = t.status;
+      localStorage.setItem("lastOrderStatus", t.status);
+    }
+  } catch {}
+}
+document.getElementById("bellbtn").addEventListener("click", () => { UNREAD = 0; document.getElementById("bellbadge").style.display = "none"; });
+setInterval(pollOrder, 15000);
+pollOrder();
 </script>
 </body>
 </html>

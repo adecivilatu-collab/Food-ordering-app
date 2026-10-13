@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rider App — Foodiebator</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<style>
+body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
+header{background:var(--color-primary-dark);color:#fff;padding:16px}
+.wrap{max-width:640px;margin:auto;padding:16px}
+.card{background:#fff;border:1px solid var(--color-accent);border-radius:12px;padding:12px;margin:10px 0}
+.muted{color:var(--color-muted);font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input{border:1px solid var(--color-accent);border-radius:8px;padding:10px;font-size:15px;min-height:44px;margin:4px 0;flex:1}
+button{background:var(--color-primary);color:#fff;border:0;border-radius:8px;padding:10px 14px;min-height:44px;font-weight:700;cursor:pointer}
+button.small{width:auto;padding:8px 12px;min-height:36px}
+button.green{background:var(--color-success)}button.dark{background:var(--color-primary-dark)}
+h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
+.earn{background:var(--color-surface);border-radius:12px;padding:14px;text-align:center;font-size:20px;font-weight:800}
+</style>
+</head>
+<body>
+<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"> <b>Rider App</b><div class="muted" id="who" style="color:#eee">Not signed in</div></header>
+<div class="wrap">
+<div id="gate" class="card"><b>Rider sign in</b><div class="row"><input id="rid" placeholder="Rider id (e.g. rider1)"><button class="small" onclick="login()">Sign in</button></div>
+<div class="row"><input id="rname" placeholder="Name"><input id="rphone" placeholder="Phone"><button class="small green" onclick="register()">Register</button></div><div id="gmsg" class="muted"></div></div>
+<div id="app" style="display:none">
+<div class="earn" id="earn">-</div>
+<div class="card"><b>GPS sharing</b> <span class="muted" id="gpsstate">off</span><div class="row"><button class="small green" onclick="gpsToggle()">Share my location</button></div></div>
+<h2>Available requests</h2><div id="reqs"></div>
+<h2>My active delivery</h2><div id="active"></div>
+</div>
+</div>
+<script>
+const API = localStorage.getItem("apiBase") || "http://localhost:4000";
+const R = "rider";
+async function api(m, p, b, role) {
+  const h = { "Content-Type": "application/json" };
+  if (role) h["x-role"] = role;
+  const r = await fetch(API + p, { method: m, credentials: "include", headers: h, body: b ? JSON.stringify(b) : undefined });
+  if (r.status === 401) { location = "../web-customer/login.html"; throw new Error("login"); }
+  return r.json();
+}
+function me() { return localStorage.getItem("riderId") || ""; }
+async function register() {
+  const r = await api("POST", "/rider/register", { name: document.getElementById("rname").value || "Rider", phone: document.getElementById("rphone").value || "", vehicle: "bike" });
+  document.getElementById("gmsg").textContent = "Registered as " + r.rider.id + " (pending approval).";
+  localStorage.setItem("riderId", r.rider.id);
+  refresh();
+}
+async function login() {
+  const id = document.getElementById("rid").value.trim();
+  if (!id) return;
+  localStorage.setItem("riderId", id);
+  refresh();
+}
+async function refresh() {
+  const id = me();
+  if (!id) return;
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  document.getElementById("who").textContent = "Signed in: " + id;
+  const e = await api("GET", `/rider/${id}/earnings`);
+  document.getElementById("earn").textContent = e.error ? "Unknown rider" : ("Balance: [N]" + (e.earnings_kobo / 100).toLocaleString());
+  const q = await api("GET", "/rider/requests");
+  document.getElementById("reqs").innerHTML = (q.requests || []).map((o) => `
+    <div class="card"><b>${o.order_no}</b> <span class="muted">[N]${(o.total_kobo / 100).toLocaleString()}</span>
+    <div class="row"><button class="small green" onclick="accept('${o.id}')">Accept</button></div></div>`).join("") || "<p class='muted'>No requests right now.</p>";
+  const mine = await api("GET", "/rider/active?rider_id=" + id).catch(() => ({ orders: [] }));
+  const active = (mine.orders || []).filter((o) => o.rider_id === id && !["delivered", "cancelled"].includes(o.order_status));
+  const flow = { ready: ["picked_up"], picked_up: ["on_the_way"], on_the_way: ["delivered"] };
+  document.getElementById("active").innerHTML = active.map((o) => `
+    <div class="card"><b>${o.order_no}</b> <span class="muted">${o.order_status}</span>
+    <div class="row">${(flow[o.order_status] || []).map((t) => `<button class="small green" onclick="advance('${o.id}','${t}')">${t.replace(/_/g, " ")}</button>`).join("")}</div></div>`).join("") || "<p class='muted'>Nothing active.</p>";
+}
+async function accept(id) { await api("POST", `/orders/${id}/assign`, { rider_id: me() }); refresh(); }
+async function advance(id, to) { await api("PATCH", `/orders/${id}/status`, { to }, R); refresh(); }
+let GPS_TIMER = null;
+function gpsToggle() {
+  if (GPS_TIMER) { clearInterval(GPS_TIMER); GPS_TIMER = null; document.getElementById("gpsstate").textContent = "off"; return; }
+  if (!navigator.geolocation) { document.getElementById("gpsstate").textContent = "no GPS on this device"; return; }
+  document.getElementById("gpsstate").textContent = "sharing...";
+  const send = () => navigator.geolocation.getCurrentPosition(
+    (pos) => api("POST", "/rider/ping", { rider_id: me(), lat: pos.coords.latitude, lng: pos.coords.longitude }).then(() => { document.getElementById("gpsstate").textContent = "live " + new Date().toLocaleTimeString(); }).catch(() => {}),
+    () => { document.getElementById("gpsstate").textContent = "permission denied"; }
+  );
+  send();
+  GPS_TIMER = setInterval(send, 30000);
+}
+if (me()) refresh();
+setInterval(() => { if (me()) refresh(); }, 20000);
+</script>
+</body>
+</html>

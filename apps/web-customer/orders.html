@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>My Orders — Foodiebator</title>
-<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
+<title>My Orders - Foodiebator</title>
+<link rel="stylesheet" href="assets/tokens.css">
 <style>
 body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
 header{background:var(--color-primary-dark);color:#fff;padding:16px}
@@ -16,11 +16,12 @@ button.ghost{background:#fff;color:var(--color-primary-dark);border:2px solid va
 </style>
 </head>
 <body>
-<header><a href="index.html" style="color:var(--color-accent)">← Home</a> <img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 style="margin:4px 0">My Orders</h2></header>
+<header><a href="index.html" style="color:var(--color-accent)">< Home</a> <img src="assets/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 style="margin:4px 0">My Orders</h2></header>
 <div class="wrap">
-<p class="muted">Guests too — enter the phone number you ordered with.</p>
+<p class="muted">Guests too - enter the phone number you ordered with.</p>
 <input id="phone" placeholder="+234..." value="+2348012345678">
 <button onclick="load()">Show my orders</button>
+<div id="loyalty" class="muted"></div>
 <div id="list" style="margin-top:12px"></div>
 </div>
 <script>
@@ -30,9 +31,13 @@ async function load() {
   const phone = document.getElementById("phone").value.trim();
   localStorage.setItem("guestPhone", phone);
   const r = await (await fetch(API + "/orders?phone=" + encodeURIComponent(phone))).json();
+  try {
+    const l = await (await fetch(API + "/loyalty?phone=" + encodeURIComponent(phone))).json();
+    document.getElementById("loyalty").textContent = "Loyalty: " + l.points + " pts ([N]" + (l.value_kobo / 100).toLocaleString() + " off next order)";
+  } catch {}
   document.getElementById("list").innerHTML = (r.orders || []).map((o) => `
-    <div class="order"><b>${o.order_no}</b> <span class="muted">${o.order_status.replace(/_/g, " ")} • ₦${(o.total_kobo / 100).toLocaleString()}</span>
-    <div class="muted">${o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}</div>
+    <div class="order"><b>${o.order_no}</b> <span class="muted">${o.order_status.replace(/_/g, " ")} | [N]${(o.total_kobo / 100).toLocaleString()}</span>
+    <div class="muted">${o.items.map((i) => `${i.name} x ${i.qty}`).join(", ")}</div>
     <button class="ghost" onclick="reorder('${o.id}')">Reorder in 1 tap</button></div>`).join("") || "<p>No orders for this number yet.</p>";
 }
 async function reorder(id) {
@@ -65,11 +70,48 @@ async function chatSend() {
   try {
     const r = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/support/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) })).json();
     document.getElementById("typing").outerHTML = `<div class="b"><span>${r.answer.replace(/</g, "&lt;")}</span></div>`;
-  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline — start it first.</span></div>`; }
+  } catch { document.getElementById("typing").outerHTML = `<div class="b"><span>API offline - start it first.</span></div>`; }
   log.scrollTop = log.scrollHeight;
 }
 function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && document.activeElement && document.activeElement.id === "chatq") chatSend(); });
+</script>
+<style>
+#bellbtn{position:fixed;bottom:140px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--color-primary-dark);color:#fff;border:0;font-size:24px;z-index:20;cursor:pointer}
+#bellbadge{position:fixed;bottom:182px;right:16px;background:var(--color-danger);color:#fff;border-radius:999px;min-width:22px;height:22px;font-size:12px;font-weight:800;display:none;z-index:21;text-align:center;line-height:22px}
+#toasts{position:fixed;top:12px;left:12px;right:12px;z-index:40}
+.toast{background:var(--color-primary-dark);color:#fff;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+</style>
+<button id="bellbtn" onclick="location='track.html' + (localStorage.getItem('lastOrderId') ? '?id=' + localStorage.getItem('lastOrderId') : '')">!</button>
+<div id="bellbadge"></div>
+<div id="toasts"></div>
+<script>
+let LAST_STATUS = localStorage.getItem("lastOrderStatus") || "";
+let UNREAD = 0;
+async function pollOrder() {
+  const id = localStorage.getItem("lastOrderId");
+  if (!id) return;
+  try {
+    const t = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/track/" + id)).json();
+    if (t.status && t.status !== LAST_STATUS) {
+      if (LAST_STATUS) {
+        UNREAD++;
+        const b = document.getElementById("bellbadge");
+        b.style.display = "block"; b.textContent = UNREAD;
+        const d = document.createElement("div");
+        d.className = "toast";
+        d.textContent = t.order_no + ": " + t.status.replace(/_/g, " ");
+        document.getElementById("toasts").appendChild(d);
+        setTimeout(() => d.remove(), 6000);
+      }
+      LAST_STATUS = t.status;
+      localStorage.setItem("lastOrderStatus", t.status);
+    }
+  } catch {}
+}
+document.getElementById("bellbtn").addEventListener("click", () => { UNREAD = 0; document.getElementById("bellbadge").style.display = "none"; });
+setInterval(pollOrder, 15000);
+pollOrder();
 </script>
 </body>
 </html>

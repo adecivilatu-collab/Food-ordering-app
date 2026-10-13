@@ -28,7 +28,8 @@ select,input{border:1px solid var(--color-accent);border-radius:var(--radius-md)
 </head>
 <body>
 <header><a href="index.html" style="color:var(--color-accent)">< Home</a> <img src="assets/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"><h2 id="name" style="margin:4px 0">Restaurant</h2><div class="muted" id="info" style="color:#eee"></div></header>
-<div class="wrap"><div id="menu"><p class="muted">Loading menu...</p></div></div>
+<div class="wrap"><div id="menu"><p class="muted">Loading menu...</p></div>
+<h3>Reviews</h3><div id="reviews"><p class="muted">Loading reviews...</p></div></div>
 <div id="bar"><span id="count">Cart: 0 items</span><span><a href="cart.html">Full cart ></a> <button onclick="sheet(true)" style="width:auto;margin-left:8px">View Cart</button></span></div>
 <div id="scrim" onclick="sheet(false)"></div>
 <div id="switchprompt" style="display:none;position:fixed;left:12px;right:12px;bottom:140px;background:#fff;border:2px solid var(--color-accent);border-radius:16px;padding:16px;z-index:30;box-shadow:0 8px 28px rgba(0,0,0,.3)">
@@ -51,6 +52,10 @@ async function load() {
     <div class="item"><div><b>${f.name}</b><div class="price">[N]${(f.price_kobo / 100).toLocaleString()}</div>
     ${f.options ? f.options.map((o) => `<select data-f="${f.id}" data-t="${o.type}">${o.choices.map((c) => `<option>${c.name}${c.delta_kobo ? " (+[N]" + (c.delta_kobo / 100).toLocaleString() + ")" : ""}</option>`).join("")}</select>`).join("") : ""}</div>
     <button onclick="add('${f.id}')">Add +</button></div>`).join("");
+  try {
+    const rv = await (await fetch(API + "/r/" + id + "/reviews")).json();
+    document.getElementById("reviews").innerHTML = (rv.reviews || []).filter((x) => x.moderation === "approved").map((x) => `<p><b>*${x.restaurant_rating} Food ${x.food_rating} Rider ${x.delivery_rating}</b> - ${x.text || ""}</p>`).join("") || "<p class='muted'>No reviews yet - be the first after delivery.</p>";
+  } catch { document.getElementById("reviews").innerHTML = ""; }
   refresh();
 }
 let PENDING_ADD = null;

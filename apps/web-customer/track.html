@@ -42,7 +42,12 @@ async function track() {
     <p>Payment: <b>${t.payment_method ? t.payment_method.toUpperCase() : "-"}</b> - ${t.payment_status || "pending"}</p>
     ${t.scheduled_for ? `<p>Scheduled for ${new Date(t.scheduled_for).toLocaleString()}</p>` : ""}
     <div class="rider"><div class="avatar">${initial}</div><div><b>${t.rider_id ? "Rider " + t.rider_id : "Assigning your rider..."}</b><div style="color:var(--color-muted);font-size:14px">${t.rider_id ? "Call | Message" : "Sit tight"}</div></div></div>
-    <div class="steps">${STEPS.map((s, i) => `<div class="step${i <= idx ? " done" : ""}"><span class="dot"></span>${LABEL[s]}</div>`).join("")}</div>`;
+    <div class="steps">${STEPS.map((s, i) => `<div class="step${i <= idx ? " done" : ""}"><span class="dot"></span>${LABEL[s]}</div>`).join("")}</div>
+    ${t.status === "delivered" ? `<div id="revbox"><h3>Rate this order</h3><div class="row" style="display:flex;gap:8px">Restaurant <select id="rr">${[5,4,3,2,1].map((n) => `<option>${n}</option>`).join("")}</select> Food <select id="fr">${[5,4,3,2,1].map((n) => `<option>${n}</option>`).join("")}</select> Rider <select id="dr">${[5,4,3,2,1].map((n) => `<option>${n}</option>`).join("")}</select></div><input id="rtext" placeholder="Say something (optional)" style="width:100%;box-sizing:border-box;margin:6px 0;padding:10px"><button onclick="sendReview('${id}')">Submit review</button><div id="rmsg" class="muted"></div></div>` : ""}`;
+}
+async function sendReview(id) {
+  const r = await (await fetch(API + "/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: id, restaurant_rating: Number(document.getElementById("rr").value), food_rating: Number(document.getElementById("fr").value), delivery_rating: Number(document.getElementById("dr").value), text: document.getElementById("rtext").value }) })).json();
+  document.getElementById("rmsg").textContent = r.error ? r.error : "Thanks! Review submitted for approval.";
 }
 const q = new URLSearchParams(location.search).get("id");
 if (q) { document.getElementById("oid").value = q; track(); }

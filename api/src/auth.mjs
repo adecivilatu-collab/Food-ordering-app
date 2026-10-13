@@ -29,6 +29,11 @@ export const auth = betterAuth({
   }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:4000",
   secret: process.env.BETTER_AUTH_SECRET || "change-me-dev-only",
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL || "http://localhost:4000",
+    "http://localhost:8080",
+    "https://foodiebator.netlify.app",
+  ],
   emailAndPassword: { enabled: true },
   plugins: [
     admin({

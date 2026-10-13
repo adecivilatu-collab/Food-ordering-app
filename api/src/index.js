@@ -96,6 +96,9 @@ http.createServer(async (req, res) => {
     const id = u.pathname.split("/")[2];
     return json(res, 200, { menu: menuData.menu.filter((m) => m.restaurant_id === id) });
   }
+  if (u.pathname.startsWith("/r/") && u.pathname.endsWith("/reviews")) {
+    return json(res, 200, { reviews: engage.forRestaurant(u.pathname.split("/")[2]) });
+  }
   if (u.pathname.startsWith("/r/")) {
     const r = catalog.detail(u.pathname.slice(3));
     return r ? json(res, 200, r) : json(res, 404, { error: "not found" });
@@ -143,6 +146,23 @@ http.createServer(async (req, res) => {
     const r = await orders.checkout({ ...b, session: b.session || "dev", restaurant: rest, idempotencyKey: req.headers["idempotency-key"] });
     if (!r.error && !r.duplicate) { r.order.eta_min = 30; notify.send("confirmation", r.order); }
     return r.error ? json(res, 400, r) : json(res, r.duplicate ? 200 : 201, r);
+  }
+  if (u.pathname.startsWith("/order/") && u.pathname.endsWith("/cancel") && req.method === "POST") {
+    const id = u.pathname.split("/")[2];
+    const o = await orders.get(id);
+    if (!o) return json(res, 404, { error: "not found" });
+    const b = await body(req);
+    if (!o.contact || !o.contact.phone || b.phone !== o.contact.phone) {
+      return json(res, 401, { error: "phone required" });
+    }
+    if (!["received", "accepted"].includes(o.order_status)) {
+      return json(res, 400, { error: "too late to cancel - contact support" });
+    }
+    o.order_status = "cancelled";
+    o.timeline.push({ status: "cancelled", by: "customer", at: new Date().toISOString() });
+    await orders.touch(o);
+    notify.send("refund", o);
+    return json(res, 200, { order: o });
   }
   if (u.pathname.startsWith("/order/")) {
     const o = await orders.get(u.pathname.slice(7));
@@ -263,9 +283,6 @@ http.createServer(async (req, res) => {
     const b = await body(req);
     const r = engage.addReview(await orders.get(b.order_id), b);
     return r.error ? json(res, 400, r) : json(res, 201, r);
-  }
-  if (u.pathname.startsWith("/r/") && u.pathname.endsWith("/reviews")) {
-    return json(res, 200, { reviews: engage.forRestaurant(u.pathname.split("/")[2]) });
   }
   if (u.pathname === "/favorites" && req.method === "POST") {
     const b = await body(req);

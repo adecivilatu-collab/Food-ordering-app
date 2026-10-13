@@ -71,5 +71,42 @@ async function chatSend() {
 function chatToggle() { document.getElementById("chatbox").classList.toggle("open"); }
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && document.activeElement && document.activeElement.id === "chatq") chatSend(); });
 </script>
+<style>
+#bellbtn{position:fixed;bottom:140px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--color-primary-dark);color:#fff;border:0;font-size:24px;z-index:20;cursor:pointer}
+#bellbadge{position:fixed;bottom:182px;right:16px;background:var(--color-danger);color:#fff;border-radius:999px;min-width:22px;height:22px;font-size:12px;font-weight:800;display:none;z-index:21;text-align:center;line-height:22px}
+#toasts{position:fixed;top:12px;left:12px;right:12px;z-index:40}
+.toast{background:var(--color-primary-dark);color:#fff;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+</style>
+<button id="bellbtn" onclick="location='track.html' + (localStorage.getItem('lastOrderId') ? '?id=' + localStorage.getItem('lastOrderId') : '')">!</button>
+<div id="bellbadge"></div>
+<div id="toasts"></div>
+<script>
+let LAST_STATUS = localStorage.getItem("lastOrderStatus") || "";
+let UNREAD = 0;
+async function pollOrder() {
+  const id = localStorage.getItem("lastOrderId");
+  if (!id) return;
+  try {
+    const t = await (await fetch(((typeof API !== "undefined" ? API : localStorage.getItem("apiBase")) || "http://localhost:4000") + "/track/" + id)).json();
+    if (t.status && t.status !== LAST_STATUS) {
+      if (LAST_STATUS) {
+        UNREAD++;
+        const b = document.getElementById("bellbadge");
+        b.style.display = "block"; b.textContent = UNREAD;
+        const d = document.createElement("div");
+        d.className = "toast";
+        d.textContent = t.order_no + ": " + t.status.replace(/_/g, " ");
+        document.getElementById("toasts").appendChild(d);
+        setTimeout(() => d.remove(), 6000);
+      }
+      LAST_STATUS = t.status;
+      localStorage.setItem("lastOrderStatus", t.status);
+    }
+  } catch {}
+}
+document.getElementById("bellbtn").addEventListener("click", () => { UNREAD = 0; document.getElementById("bellbadge").style.display = "none"; });
+setInterval(pollOrder, 15000);
+pollOrder();
+</script>
 </body>
 </html>

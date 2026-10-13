@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vendor Dashboard - Foodiebator</title>
-<link rel="stylesheet" href="assets/tokens.css">
+<title>Vendor Dashboard — Foodiebator</title>
+<link rel="stylesheet" href="../../packages/ui-tokens/tokens.css">
 <style>
 body{font-family:var(--font-family);color:var(--color-text);background:var(--color-bg);margin:0}
 header{background:var(--color-primary-dark);color:#fff;padding:16px}
@@ -23,12 +23,12 @@ h2{border-bottom:3px solid var(--color-accent);padding-bottom:4px}
 </style>
 </head>
 <body>
-<header><img src="assets/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"> <b>Vendor Dashboard</b><div class="row"><select id="rest"></select><button class="small dark" onclick="loadAll()">Refresh</button></div></header>
+<header><img src="../../packages/ui-tokens/logo.svg" alt="Foodiebator" style="height:32px;vertical-align:middle;border-radius:8px"> <b>Vendor Dashboard</b><div class="row"><select id="rest"></select><button class="small dark" onclick="loadAll()">Refresh</button></div></header>
 <div class="wrap">
 <div class="row" id="stats"></div>
 <h2>Incoming orders</h2><div id="orders"><p class="muted">Pick your restaurant.</p></div>
 <h2>Menu</h2><div id="menu"></div>
-<div class="card"><b>Add item</b><div class="row"><input id="ni_name" placeholder="Name"><input id="ni_price" placeholder="Price [N]" type="number"><button class="small green" onclick="addItem()">Add</button></div></div>
+<div class="card"><b>Add item</b><div class="row"><input id="ni_name" placeholder="Name"><input id="ni_price" placeholder="Price ₦" type="number"><button class="small green" onclick="addItem()">Add</button></div></div>
 <h2>Hours & promos</h2>
 <div class="card"><div class="row"><input id="hours" placeholder='e.g. {"mon":"9-21"}' style="flex:1"><button class="small" onclick="setHours()">Save hours</button></div>
 <div class="row"><input id="promo_type" placeholder="percent" style="width:120px"><input id="promo_val" placeholder="value e.g. 10" type="number" style="width:140px"><button class="small" onclick="addPromo()">New promo</button></div><div id="msg" class="muted"></div></div>
@@ -39,7 +39,8 @@ const R = "restaurant";
 async function api(m, p, b, role) {
   const h = { "Content-Type": "application/json" };
   if (role) h["x-role"] = role;
-  const r = await fetch(API + p, { method: m, headers: h, body: b ? JSON.stringify(b) : undefined });
+  const r = await fetch(API + p, { method: m, credentials: "include", headers: h, body: b ? JSON.stringify(b) : undefined });
+  if (r.status === 401) { location = "../web-customer/login.html"; throw new Error("login"); }
   return r.json();
 }
 function rid() { return document.getElementById("rest").value; }
@@ -71,16 +72,16 @@ async function loadOrders() {
   const rev = todays.filter((o) => o.order_status !== "cancelled").reduce((s, o) => s + o.total_kobo, 0);
   document.getElementById("stats").innerHTML = `
     <div class="tiles"><div class="tile"><b>${todays.length}</b><span class="muted">Today</span></div>
-    <div class="tile"><b>[N]${(rev / 100).toLocaleString()}</b><span class="muted">Revenue</span></div>
+    <div class="tile"><b>₦${(rev / 100).toLocaleString()}</b><span class="muted">Revenue</span></div>
     <div class="tile"><b>${mine.filter((o) => o.order_status === "received").length}</b><span class="muted">Waiting</span></div></div>`;
   const flow = { received: ["accepted"], accepted: ["preparing"], preparing: ["ready"] };
   document.getElementById("orders").innerHTML = mine.map((o) => {
     const age = ageMin(o.created_at);
     const late = o.order_status === "received" && age >= 5;
     return `
-    <div class="card${o.order_status === "received" ? " new" : ""}"><b>${o.order_no}</b> <span class="muted">${o.order_status} | [N]${(o.total_kobo / 100).toLocaleString()} | ${o.contact ? o.contact.phone : ""}${o.scheduled_for ? " | Scheduled " + new Date(o.scheduled_for).toLocaleString() : ""}</span>
-    <div class="${late ? "late" : "muted"}">Waiting ${age} min${late ? " - URGENT" : ""}</div>
-    <div class="muted">${o.items.map((i) => `${i.name} x ${i.qty}`).join(", ")}</div>
+    <div class="card${o.order_status === "received" ? " new" : ""}"><b>${o.order_no}</b> <span class="muted">${o.order_status} • ₦${(o.total_kobo / 100).toLocaleString()} • ${o.contact ? o.contact.phone : ""}${o.scheduled_for ? " • Scheduled " + new Date(o.scheduled_for).toLocaleString() : ""}</span>
+    <div class="${late ? "late" : "muted"}">Waiting ${age} min${late ? " — URGENT" : ""}</div>
+    <div class="muted">${o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}</div>
     <div class="row">${(flow[o.order_status] || []).map((t) => `<button class="small green" onclick="setStatus('${o.id}','${t}')">${t}</button>`).join("")}
     ${o.order_status === "received" ? `<button class="small" style="background:var(--color-danger)" onclick="rejectOrder('${o.id}')">Reject</button>` : ""}
     ${["accepted", "preparing"].includes(o.order_status) ? [5, 10, 15].map((m) => `<button class="small dark" onclick="addPrep('${o.id}',${m})">+${m} min</button>`).join("") : ""}</div></div>`;
@@ -103,9 +104,9 @@ async function setStatus(id, to) { await api("PATCH", `/orders/${id}/status`, { 
 async function loadMenu() {
   const m = await (await fetch(API + "/r/" + rid() + "/menu")).json();
   document.getElementById("menu").innerHTML = m.menu.map((f) => `
-    <div class="card"><div class="row"><b style="flex:1">${f.name} - [N]${(f.price_kobo / 100).toLocaleString()} ${f.available ? "" : "(off)"} ${f.photo ? "" : '<span class="nophoto">No photo</span>'}</b>
+    <div class="card"><div class="row"><b style="flex:1">${f.name} — ₦${(f.price_kobo / 100).toLocaleString()} ${f.available ? "" : "(off)"} ${f.photo ? "" : '<span class="nophoto">No photo</span>'}</b>
     <button class="small ${f.available ? "grey" : "green"}" onclick="toggleAvail('${f.id}',${!f.available})">${f.available ? "Hide" : "Show"}</button></div>
-    <div class="row"><input id="p_${f.id}" placeholder="New price [N]" type="number" style="width:130px"><button class="small" onclick="setPrice('${f.id}')">Set price</button></div>
+    <div class="row"><input id="p_${f.id}" placeholder="New price ₦" type="number" style="width:130px"><button class="small" onclick="setPrice('${f.id}')">Set price</button></div>
     <div class="row"><input id="img_${f.id}" placeholder="Photo URL" style="flex:1" value="${f.photo || ""}"><button class="small" onclick="setPhoto('${f.id}')">Set photo</button></div></div>`).join("");
 }
 async function setPhoto(id) {
@@ -134,7 +135,7 @@ async function addPromo() {
   document.getElementById("msg").textContent = "Promo created.";
 }
 document.getElementById("rest").addEventListener("change", () => { loadOrders(); loadMenu(); });
-loadAll().catch(() => { document.getElementById("orders").innerHTML = "<p>API offline - start it first.</p>"; });
+loadAll().catch(() => { document.getElementById("orders").innerHTML = "<p>API offline — start it first.</p>"; });
 </script>
 </body>
 </html>

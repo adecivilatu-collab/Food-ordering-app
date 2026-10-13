@@ -36,7 +36,8 @@ const R = "rider";
 async function api(m, p, b, role) {
   const h = { "Content-Type": "application/json" };
   if (role) h["x-role"] = role;
-  const r = await fetch(API + p, { method: m, headers: h, body: b ? JSON.stringify(b) : undefined });
+  const r = await fetch(API + p, { method: m, credentials: "include", headers: h, body: b ? JSON.stringify(b) : undefined });
+  if (r.status === 401) { location = "../web-customer/login.html"; throw new Error("login"); }
   return r.json();
 }
 function me() { return localStorage.getItem("riderId") || ""; }
@@ -60,11 +61,11 @@ async function refresh() {
   document.getElementById("who").textContent = "Signed in: " + id;
   const e = await api("GET", `/rider/${id}/earnings`);
   document.getElementById("earn").textContent = e.error ? "Unknown rider" : ("Balance: [N]" + (e.earnings_kobo / 100).toLocaleString());
-  const q = await (await fetch(API + "/rider/requests")).json();
+  const q = await api("GET", "/rider/requests");
   document.getElementById("reqs").innerHTML = (q.requests || []).map((o) => `
     <div class="card"><b>${o.order_no}</b> <span class="muted">[N]${(o.total_kobo / 100).toLocaleString()}</span>
     <div class="row"><button class="small green" onclick="accept('${o.id}')">Accept</button></div></div>`).join("") || "<p class='muted'>No requests right now.</p>";
-  const mine = await (await fetch(API + "/admin/orders")).json();
+  const mine = await api("GET", "/rider/active?rider_id=" + id).catch(() => ({ orders: [] }));
   const active = (mine.orders || []).filter((o) => o.rider_id === id && !["delivered", "cancelled"].includes(o.order_status));
   const flow = { ready: ["picked_up"], picked_up: ["on_the_way"], on_the_way: ["delivered"] };
   document.getElementById("active").innerHTML = active.map((o) => `

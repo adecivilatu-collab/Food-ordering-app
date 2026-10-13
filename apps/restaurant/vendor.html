@@ -39,7 +39,8 @@ const R = "restaurant";
 async function api(m, p, b, role) {
   const h = { "Content-Type": "application/json" };
   if (role) h["x-role"] = role;
-  const r = await fetch(API + p, { method: m, headers: h, body: b ? JSON.stringify(b) : undefined });
+  const r = await fetch(API + p, { method: m, credentials: "include", headers: h, body: b ? JSON.stringify(b) : undefined });
+  if (r.status === 401) { location = "../web-customer/login.html"; throw new Error("login"); }
   return r.json();
 }
 function rid() { return document.getElementById("rest").value; }

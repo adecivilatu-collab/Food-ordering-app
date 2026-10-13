@@ -37,6 +37,11 @@ async function requirePerm(req, res, perm) {
   }
   return s;
 }
+async function requireLogin(req, res) {
+  const s = await baSession(req);
+  if (!s || !s.user) { json(res, 401, { error: "login required" }); return null; }
+  return s;
+}
 async function betterAuthHandler(req, res) {
   if (!baHandler) {
     const { toNodeHandler } = await import("better-auth/node");
@@ -148,6 +153,8 @@ http.createServer(async (req, res) => {
     return json(res, 200, o);
   }
   if (u.pathname.startsWith("/orders/") && u.pathname.endsWith("/status") && req.method === "PATCH") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
     const id = u.pathname.split("/")[2];
     const o = await orders.get(id);
     if (!o) return json(res, 404, { error: "not found" });
@@ -161,6 +168,8 @@ http.createServer(async (req, res) => {
     return r.error ? json(res, r.code || 400, r) : json(res, 200, r);
   }
   if (u.pathname.startsWith("/orders/") && u.pathname.endsWith("/assign") && req.method === "POST") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
     const id = u.pathname.split("/")[2];
     const o = await orders.get(id);
     if (!o) return json(res, 404, { error: "not found" });
@@ -170,26 +179,36 @@ http.createServer(async (req, res) => {
     return json(res, 200, assigned);
   }
   if (u.pathname === "/restaurant/menu" && req.method === "POST") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
     const b = await body(req);
     const r = restaurant.addItem(b);
     return r.error ? json(res, 400, r) : json(res, 201, r);
   }
   if (u.pathname.startsWith("/restaurant/menu/") && req.method === "PATCH") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
     const id = u.pathname.split("/")[3];
     const b = await body(req);
     const r = b.price_kobo !== undefined ? restaurant.setPrice(id, b.price_kobo) : b.photo !== undefined ? restaurant.setPhoto(id, b.photo) : restaurant.setAvailability(id, b.available);
     return r.error ? json(res, 404, r) : json(res, 200, r);
   }
   if (u.pathname === "/restaurant/hours" && req.method === "PUT") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
     const b = await body(req);
     return json(res, 200, restaurant.setHours(b.restaurant_id, b.open_hours));
   }
   if (u.pathname === "/restaurant/promos" && req.method === "POST") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
     const b = await body(req);
     return json(res, 201, restaurant.createPromo(b));
   }
   if (u.pathname === "/rider/register" && req.method === "POST") {
     const b = await body(req);
+    const s = await baSession(req);
+    if (s && s.user) b.user_id = s.user.id;
     return json(res, 201, rider.register(b));
   }
   if (u.pathname.startsWith("/rider/") && u.pathname.endsWith("/approve") && req.method === "POST") {
@@ -198,8 +217,17 @@ http.createServer(async (req, res) => {
     return r.error ? json(res, 404, r) : json(res, 200, r);
   }
   if (u.pathname === "/rider/requests") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
     const avail = (await orders.list()).filter((o) => o.order_status === "ready" && !o.rider_id);
     return json(res, 200, { requests: avail });
+  }
+  if (u.pathname === "/rider/active" && req.method === "GET") {
+    const login = await requireLogin(req, res);
+    if (!login) return;
+    const rid = u.searchParams.get("rider_id") || "";
+    const mine = (await orders.list()).filter((o) => o.rider_id === rid && !["delivered", "cancelled"].includes(o.order_status));
+    return json(res, 200, { orders: mine });
   }
   if (u.pathname.startsWith("/rider/") && u.pathname.endsWith("/earnings")) {
     const r = rider.get(u.pathname.split("/")[2]);

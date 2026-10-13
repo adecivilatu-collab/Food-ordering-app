@@ -208,7 +208,7 @@ http.createServer(async (req, res) => {
   if (u.pathname.startsWith("/track/")) {
     const o = await orders.get(u.pathname.slice(7));
     if (!o) return json(res, 404, { error: "not found" });
-    return json(res, 200, { order_no: o.order_no, status: o.order_status, eta_min: o.eta_min || 30, rider_id: o.rider_id || null, timeline: o.timeline, scheduled_for: o.scheduled_for || null });
+    return json(res, 200, { order_no: o.order_no, status: o.order_status, eta_min: o.eta_min || 30, rider_id: o.rider_id || null, timeline: o.timeline, scheduled_for: o.scheduled_for || null, payment_method: o.payment_method, payment_status: o.payment_status, total_kobo: o.total_kobo });
   }
   if (u.pathname === "/admin/riders") {
     if (!await requirePerm(req, res, "riders")) return;

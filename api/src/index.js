@@ -12,6 +12,7 @@ const admin = require("./modules/admin");
 const engage = require("./modules/engagement");
 const paystack = require("./modules/payments/paystack");
 const notify = require("./modules/notify");
+const loyalty = require("./modules/loyalty");
 const supportChat = require("./modules/support-chat");
 let baAuth = null;
 let baHandler = null;
@@ -183,6 +184,10 @@ http.createServer(async (req, res) => {
     const r = status.advance(o, b.to, req.headers["x-role"] || "admin");
     if (!r.error) {
       if (b.to === "delivered" && o.rider_id) rider.credit(o.rider_id, Math.round((o.fee_kobo || 0) * 0.7), o.id);
+      if (b.to === "delivered" && o.contact && o.contact.phone) {
+        const pts = loyalty.earn(o.contact.phone, o.total_kobo);
+        o.loyalty_earned = pts;
+      }
       notify.send(b.to, o);
       await orders.touch(o);
     }
@@ -365,6 +370,10 @@ http.createServer(async (req, res) => {
   if (u.pathname === "/admin/notifications") {
     if (!await requirePerm(req, res, "metrics")) return;
     return json(res, 200, { notifications: notify.log.slice(-50).reverse() });
+  }
+  if (u.pathname === "/loyalty" && req.method === "GET") {
+    const phone = u.searchParams.get("phone") || "";
+    return json(res, 200, { phone, points: loyalty.balance(phone), value_kobo: Math.floor(loyalty.balance(phone) / 100) * 50000 });
   }
   if (u.pathname === "/guest/session") return json(res, 200, { session: auth.guestSession() });
   if (u.pathname === "/support/chat" && req.method === "POST") {

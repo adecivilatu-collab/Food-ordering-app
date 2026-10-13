@@ -21,6 +21,7 @@ button.ghost{background:#fff;color:var(--color-primary-dark);border:2px solid va
 <p class="muted">Guests too - enter the phone number you ordered with.</p>
 <input id="phone" placeholder="+234..." value="+2348012345678">
 <button onclick="load()">Show my orders</button>
+<div id="loyalty" class="muted"></div>
 <div id="list" style="margin-top:12px"></div>
 </div>
 <script>
@@ -30,6 +31,10 @@ async function load() {
   const phone = document.getElementById("phone").value.trim();
   localStorage.setItem("guestPhone", phone);
   const r = await (await fetch(API + "/orders?phone=" + encodeURIComponent(phone))).json();
+  try {
+    const l = await (await fetch(API + "/loyalty?phone=" + encodeURIComponent(phone))).json();
+    document.getElementById("loyalty").textContent = "Loyalty: " + l.points + " pts ([N]" + (l.value_kobo / 100).toLocaleString() + " off next order)";
+  } catch {}
   document.getElementById("list").innerHTML = (r.orders || []).map((o) => `
     <div class="order"><b>${o.order_no}</b> <span class="muted">${o.order_status.replace(/_/g, " ")} | [N]${(o.total_kobo / 100).toLocaleString()}</span>
     <div class="muted">${o.items.map((i) => `${i.name} x ${i.qty}`).join(", ")}</div>

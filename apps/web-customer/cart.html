@@ -28,6 +28,7 @@ button{background:var(--color-primary);color:#fff;border:0;border-radius:var(--r
 <select id="pay"><option value="card">Card (Paystack test)</option><option value="transfer">Bank Transfer</option><option value="ussd">USSD</option><option value="wallet">Wallet</option><option value="cod">Cash on Delivery</option></select>
 <label style="font-size:14px;color:var(--color-muted)">Schedule for later (optional - offices love this)</label>
 <input id="sched" type="datetime-local">
+<div class="row" style="display:flex;gap:8px;align-items:center"><span id="loyal" class="muted">Loyalty: -</span><input id="redeem" placeholder="Points (100 = [N]500 off)" type="number" style="flex:1"></div>
 <button onclick="checkout()">Confirm Order</button>
 <div id="done"></div>
 </div>
@@ -37,13 +38,21 @@ const SESSION = localStorage.getItem("session");
 async function load() {
   const c = await (await fetch(API + "/cart?session=" + SESSION)).json();
   const fee = 80000, service = Math.round((c.subtotal_kobo || 0) * 0.05);
+  try {
+    const phone = (document.getElementById("phone") && document.getElementById("phone").value) || "";
+    if (phone) {
+      const l = await (await fetch(API + "/loyalty?phone=" + encodeURIComponent(phone))).json();
+      document.getElementById("loyal").textContent = "Loyalty: " + l.points + " pts ([N]" + (l.value_kobo / 100).toLocaleString() + " off)";
+    }
+  } catch {}
   const total = (c.subtotal_kobo || 0) + (c.lines.length ? fee + service : 0);
   document.getElementById("cart").innerHTML = (c.lines.map((l) => `<div class="row"><b>${l.name} x ${l.qty}</b><div>[N]${(l.line_kobo / 100).toLocaleString()}</div></div>`).join("") || "<p>Cart is empty.</p>") +
     `<div class="fees"><div><span>Subtotal</span><span>[N]${((c.subtotal_kobo || 0) / 100).toLocaleString()}</span></div><div><span>Delivery</span><span>[N]${c.lines.length ? (fee / 100).toLocaleString() : 0}</span></div><div><span>Service 5%</span><span>[N]${c.lines.length ? (service / 100).toLocaleString() : 0}</span></div><div class="total"><span>Total</span><span>[N]${(total / 100).toLocaleString()}</span></div></div>`;
 }
 async function checkout() {
   const schedVal = document.getElementById("sched").value;
-  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value, email: document.getElementById("email").value || "" }, payment_method: document.getElementById("pay").value, scheduled_for: schedVal ? new Date(schedVal).toISOString() : undefined }) })).json();
+  const redeem = Number(document.getElementById("redeem").value) || 0;
+  const r = await (await fetch(API + "/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: SESSION, address: { label: document.getElementById("addr").value || "Home" }, contact: { name: document.getElementById("name").value || "Guest", phone: document.getElementById("phone").value, email: document.getElementById("email").value || "" }, payment_method: document.getElementById("pay").value, scheduled_for: schedVal ? new Date(schedVal).toISOString() : undefined, redeem_points: redeem }) })).json();
   if (r.order && r.order.id) { localStorage.setItem("lastOrderId", r.order.id); localStorage.setItem("lastOrderStatus", r.order.order_status); }
   if (r.error) { document.getElementById("done").innerHTML = `<div class="ok" style="background:var(--color-danger)">${r.error}</div>`; return; }
   let extra = "";
